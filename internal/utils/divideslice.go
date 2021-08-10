@@ -1,6 +1,8 @@
 package utils
 
-import "errors"
+import (
+	"errors"
+)
 
 func DivideSlice(s []int, batchSize int) ([][]int, error) {
 	if batchSize == 0 {
