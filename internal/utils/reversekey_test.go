@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-func TestNil(t *testing.T) {
+func TestReverseKeyNil(t *testing.T) {
 	_, err := ReverseKey(nil)
 	if err == nil {
 		t.Errorf("ReverseKey failed. In: nil, expected error != null, actual: nil")
 	}
 }
 
-func TestSuccess(t *testing.T) {
+func TestReverseKeySuccess(t *testing.T) {
 	in := map[int]string{1: "a1", 2: "a2", 3: "a3", 4: "a4"}
 	expected := map[string]int{"a1": 1, "a2": 2, "a3": 3, "a4": 4}
 
@@ -26,7 +26,7 @@ func TestSuccess(t *testing.T) {
 	}
 }
 
-func TestNonUniqueValues(t *testing.T) {
+func TestReverseKeyNonUniqueValues(t *testing.T) {
 	in := map[int]string{1: "a1", 2: "a1", 3: "a3", 4: "a5"}
 
 	defer func() {
