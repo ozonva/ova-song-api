@@ -6,7 +6,7 @@ import (
 
 func ReverseKey(m map[int]string) (map[string]int, error) {
 	if m == nil {
-		return nil, errors.New("map can't  be nil!")
+		return nil, errors.New("map can't be nil")
 	}
 
 	result := make(map[string]int, len(m))

@@ -8,7 +8,7 @@ var filtered = []int{1, 3, 5, 7, 9}
 
 func FilterHardcoded(s []int) ([]int, error) {
 	if s == nil {
-		return nil, errors.New("slice can't  be nil!")
+		return nil, errors.New("slice can't be nil")
 	}
 
 	index := make(map[int]interface{}, len(filtered))
