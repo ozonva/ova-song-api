@@ -5,8 +5,8 @@ import (
 )
 
 func DivideSlice(s []int, batchSize int) ([][]int, error) {
-	if batchSize == 0 {
-		return nil, errors.New("batch size must be non-zero")
+	if batchSize <= 0 {
+		return nil, errors.New("batch size must be positive")
 	}
 
 	if s == nil {
