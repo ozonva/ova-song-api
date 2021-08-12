@@ -14,6 +14,7 @@ type divideSliceTest struct {
 
 var divideSliceTests = []divideSliceTest{
 	{nil, 10, nil, true},
+	{[]int{1, 2, 3}, 0, nil, true},
 	{[]int{}, 2, [][]int{}, false},
 	{[]int{9, 1, 2, 3, 4, 5, 6, 7, 8}, 2, [][]int{{9, 1}, {2, 3}, {4, 5}, {6, 7}, {8}}, false},
 	{[]int{9, 1, 2, 3, 4, 5, 6, 7, 8}, 1, [][]int{{9}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}}, false},
@@ -36,15 +37,4 @@ func TestDivideSlice(t *testing.T) {
 				test.in, test.batchSize, test.expected, actual)
 		}
 	}
-}
-
-func TestDivideSliceZeroSizedBatch(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("DivideSlice failed. Expected: panic, actual: no panic")
-		}
-	}()
-
-	ignored, _ := DivideSlice([]int{1, 2, 3}, 0)
-	_ = ignored
 }

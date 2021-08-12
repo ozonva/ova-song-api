@@ -6,11 +6,11 @@ import (
 
 func DivideSlice(s []int, batchSize int) ([][]int, error) {
 	if batchSize == 0 {
-		panic("batch size must be non-zero")
+		return nil, errors.New("batch size must be non-zero")
 	}
 
 	if s == nil {
-		return nil, errors.New("slice can't be nil")
+		return nil, errors.New("slice must be not nil")
 	}
 
 	count := len(s) / batchSize
