@@ -29,8 +29,8 @@ func DivideSlice(s []int, batchSize int) ([][]int, error) {
 	return result, nil
 }
 
-func divCeil(divisor, dividend int) int {
+func divCeil(dividend, divisor int) int {
 	// Notice: you may want to use another form to prevent integer overflow:
-	// divCeil = 1 + (divisor - 1) / dividend
-	return (divisor + dividend - 1) / dividend
+	// divCeil = 1 + (dividend - 1) / divisor
+	return (divisor + dividend - 1) / divisor
 }
