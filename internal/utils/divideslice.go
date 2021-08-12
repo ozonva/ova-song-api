@@ -13,18 +13,24 @@ func DivideSlice(s []int, batchSize int) ([][]int, error) {
 		return nil, errors.New("slice must be not nil")
 	}
 
-	count := len(s) / batchSize
-	result := make([][]int, count)
+	result := make([][]int, divCeil(len(s), batchSize))
 
+	fullBatches := len(s) / batchSize
 	pos := 0
-	for i := 0; i < count; i++ {
+	for i := 0; i < fullBatches; i++ {
 		result[i] = s[pos : pos+batchSize]
 		pos += batchSize
 	}
 
 	if pos != len(s) {
-		result = append(result, s[pos:])
+		result[len(result)-1] = s[pos:]
 	}
 
 	return result, nil
+}
+
+func divCeil(divisor, dividend int) int {
+	// Notice: you may want to use another form to prevent integer overflow:
+	// divCeil = 1 + (divisor - 1) / dividend
+	return (divisor + dividend - 1) / dividend
 }
