@@ -2,7 +2,10 @@ package utils
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
+
+	"github.com/ozonva/ova-song-api/internal/models"
 )
 
 type divideSliceTest struct {
@@ -39,4 +42,51 @@ func TestDivideSlice(t *testing.T) {
 				i, test.in, test.batchSize, test.expected, actual)
 		}
 	}
+}
+
+func TestDivideSliceOfSongs(t *testing.T) {
+	for i, test := range divideSliceTests {
+		in, expected := prepareTestDataForSongs(test.in, test.expected)
+
+		actual, err := DivideSliceOfSongs(in, test.batchSize)
+
+		if (test.error && err == nil) || (!test.error && err != nil) {
+			t.Errorf("DivideSlice failed. Case: %v. In: (%v, %v). Expected error == nil, actual: %v",
+				i, in, test.batchSize, err)
+			continue
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("DivideSlice failed. Case: %v. In: (%v, %v). Expected %v, actual: %v",
+				i, test.in, test.batchSize, expected, actual)
+		}
+	}
+}
+
+func prepareTestDataForSongs(inInts []int, expectedInts [][]int) (in []models.Song, expected [][]models.Song) {
+	in = songSliceFromInts(inInts)
+
+	if expectedInts == nil {
+		return in, nil
+	}
+
+	expected = make([][]models.Song, len(expectedInts))
+	for i, ints := range expectedInts {
+		expected[i] = songSliceFromInts(ints)
+	}
+	return in, expected
+}
+
+func songSliceFromInts(slice []int) []models.Song {
+	if slice == nil {
+		return nil
+	}
+
+	result := make([]models.Song, len(slice))
+
+	for i, e := range slice {
+		result[i] = *models.CreateSong(0, strconv.Itoa(e), "", 0)
+	}
+
+	return result
 }
