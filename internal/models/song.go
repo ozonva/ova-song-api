@@ -16,9 +16,3 @@ func (s *Song) String() string {
 func CreateSong(id uint64, author string, name string, year int) *Song {
 	return &Song{id, author, name, year}
 }
-
-func CreateSongWithId(id uint64) *Song {
-	s := new(Song)
-	s.Id = id
-	return s
-}

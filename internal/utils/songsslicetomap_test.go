@@ -21,16 +21,16 @@ func TestSongSliceToMapNil(t *testing.T) {
 
 func TestSongSliceToMapSuccess(t *testing.T) {
 	in := []models.Song{
-		*models.CreateSongWithId(6),
-		*models.CreateSongWithId(8),
-		*models.CreateSongWithId(4),
-		*models.CreateSongWithId(2),
+		*createSongWithId(6),
+		*createSongWithId(8),
+		*createSongWithId(4),
+		*createSongWithId(2),
 	}
 	expected := map[uint64]models.Song{
-		6: *models.CreateSongWithId(6),
-		8: *models.CreateSongWithId(8),
-		4: *models.CreateSongWithId(4),
-		2: *models.CreateSongWithId(2),
+		6: *createSongWithId(6),
+		8: *createSongWithId(8),
+		4: *createSongWithId(4),
+		2: *createSongWithId(2),
 	}
 
 	actual, actualErr := SongSliceToMap(in)
@@ -45,14 +45,20 @@ func TestSongSliceToMapSuccess(t *testing.T) {
 
 func TestSongSliceToMapNonUniqueId(t *testing.T) {
 	in := []models.Song{
-		*models.CreateSongWithId(6),
-		*models.CreateSongWithId(8),
-		*models.CreateSongWithId(8),
-		*models.CreateSongWithId(2),
+		*createSongWithId(6),
+		*createSongWithId(8),
+		*createSongWithId(8),
+		*createSongWithId(2),
 	}
 
 	_, err := SongSliceToMap(in)
 	if err == nil {
 		t.Fatalf("SongSliceToMap failed. In: %v, expected error != null, actual: nil", in)
 	}
+}
+
+func createSongWithId(id uint64) *models.Song {
+	s := new(models.Song)
+	s.Id = id
+	return s
 }
