@@ -60,21 +60,20 @@ var _ = Describe("Saver", func() {
 
 var _ = Describe("SaverBackend", func() {
 
-	const (
-		capacity = 10
-	)
-
 	var (
 		ctrl        *gomock.Controller
 		mockFlusher *mocks.MockFlusher
+		mockTicker  *mocks.MockTicker
+		tickerChan  chan time.Time
+		sendTick    func()
 
 		backend         saverBackend
 		songChan        chan Song
 		closeChan       chan struct{}
 		sendCloseSignal func()
 
+		period   = time.Hour // whatever
 		someSong = Song{Id: 100, Author: "100", Name: "100", Year: 100}
-		_        = someSong // TODO: remove me
 		songs    = []Song{
 			{1, "Author 1", "Name 1", 2001},
 			{2, "Author 2", "Name 2", 2002},
@@ -96,13 +95,19 @@ var _ = Describe("SaverBackend", func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockFlusher = mocks.NewMockFlusher(ctrl)
 
-		songChan = make(chan Song, capacity)
-		closeChan = make(chan struct{})
+		tickerChan = make(chan time.Time)
+		mockTicker = mocks.NewMockTicker(ctrl)
+		mockTicker.EXPECT().C().Return(tickerChan).AnyTimes()
+		sendTick = func() {
+			tickerChan <- time.Time{}
+		}
 
-		period := time.Hour
+		songChan = make(chan Song)      // unbuffered to make tests more deterministic
+		closeChan = make(chan struct{}) // unbuffered
 
 		backend = saverBackend{
 			flusher:     mockFlusher,
+			ticker:      mockTicker,
 			songsBuffer: make([]Song, 0, capacity),
 			period:      period,
 			songChan:    songChan,
@@ -117,8 +122,13 @@ var _ = Describe("SaverBackend", func() {
 	})
 
 	AfterEach(func() {
+		sendCloseSignal()
+	})
+
+	AfterEach(func() {
 		wg.Wait() // waiting for the backend to complete before calling `Finish` on mock controller
 		ctrl.Finish()
+		close(tickerChan)
 	})
 
 	BeforeEach(func() {
@@ -132,20 +142,18 @@ var _ = Describe("SaverBackend", func() {
 	})
 
 	When("closed without songs", func() {
-		AfterEach(func() {
-			sendCloseSignal()
+		It("will close ticker", func() {
+			mockTicker.EXPECT().Stop().Times(1)
 		})
-
-		It("returns", func() {})
 	})
 
 	When("one song received", func() {
 		BeforeEach(func() {
-			mockFlusher.EXPECT().Flush([]Song{someSong}).AnyTimes() // todo: here
+			mockFlusher.EXPECT().Flush([]Song{someSong}).Times(1)
 		})
 
 		AfterEach(func() {
-			sendCloseSignal()
+			mockTicker.EXPECT().Stop().Times(1)
 		})
 
 		It("can receive song", func() {
@@ -153,57 +161,78 @@ var _ = Describe("SaverBackend", func() {
 		})
 	})
 
-	Context("some songs arrived", func() {
+	When("some songs arrived", func() {
 		BeforeEach(func() {
 			for i := 0; i < n; i++ {
 				songChan <- songs[i]
 			}
 		})
 
-		When("close signals arrived", func() {
-			BeforeEach(func() {
-				println("setting expectations")
+		AfterEach(func() {
+			mockTicker.EXPECT().Stop().Times(1)
+		})
+
+		When("the close signals arrived", func() {
+			It("will flush all songs and stop the timer", func() {
 				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+			})
+		})
 
-				sendCloseSignal()
+		When("the ticker does tick", func() {
+			AfterEach(func() {
+				sendTick()
 			})
 
-			It("will flush all songs", func() {
-				// verified through flusher mock
+			It("will flush contained songs and reset the ticker", func() {
+				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+				mockTicker.EXPECT().Reset(period).Times(1)
+			})
+		})
+
+		Context("flusher will fail to save the second and the fourth songs", func() {
+			BeforeEach(func() {
+				mockFlusher.EXPECT().Flush(songs[:n]).Return([]Song{songs[1], songs[3]}).Times(1)
 			})
 
-			It("will stop the timer", func() {
-				// todo
+			When("the ticker does tick", func() {
+				AfterEach(func() {
+					sendTick()
+				})
+
+				It("will flush contained songs, reset the ticker and flush remaining songs later", func() {
+					mockFlusher.EXPECT().Flush([]Song{songs[1], songs[3]}).Times(1)
+					mockTicker.EXPECT().Reset(period).Times(1)
+				})
 			})
 		})
 
 		When("the total number of songs exceeds capacity", func() {
-			AfterEach(func() {
+			var expected []Song
+			BeforeEach(func() {
+				expected = append([]Song{}, songs[:capacity]...)
+				expected = append(expected, someSong)
+
 				// note that there are already n songs in the buffer
 				for i := n; i < capacity; i++ {
 					songChan <- songs[i]
 				}
-
-				sendCloseSignal()
+				songChan <- someSong
 			})
 
-			It("should save the `capacity` of songs, than flush the remaining", func() {
-				mockFlusher.EXPECT().Flush(songs).Times(1)
+			It("should save the all the songs(when closed)", func() {
+				mockFlusher.EXPECT().Flush(expected).Times(1)
+			})
+
+			When("the ticker does tick", func() {
+				AfterEach(func() {
+					sendTick()
+				})
+
+				It("will flush contained songs, and reset the ticker", func() {
+					mockFlusher.EXPECT().Flush(expected).Times(1)
+					mockTicker.EXPECT().Reset(period).Times(1)
+				})
 			})
 		})
 	})
-
-	//mockFlusher.EXPECT().Flush(gomock.Any()).DoAndReturn(func(songs []Song) interface{} {
-	//	fmt.Printf("flusher called with: %v", songs)
-	//	return nil
-	//}).MinTimes(10)
-	//
-	//saver := saver.NewSaver(10, time.Second, mockFlusher)
-	//
-	//saver.Save(Song{Id: 1, Author: "1", Name: "1", Year: 1})
-	//saver.Save(Song{Id: 2, Author: "1", Name: "1", Year: 1})
-	//saver.Save(Song{Id: 3, Author: "1", Name: "1", Year: 1})
-	//time.Sleep(time.Second * 3)
-	//saver.Save(Song{Id: 4, Author: "1", Name: "1", Year: 1})
-	//time.Sleep(time.Second * 3)
 })
