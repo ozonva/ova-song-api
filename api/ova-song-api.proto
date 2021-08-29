@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package ova.task.api;
+
+option go_package = "github.com/ozonva/ova-song-api/pkg/ova-song-api;ova_song_api";
+
+service OvaSongApi {
+
+  rpc CreateSongV1 (CreateSongV1Request) returns (CreateSongV1Response) {}
+  rpc DescribeSongV1 (DescribeSongV1Request) returns (DescribeSongV1Response) {}
+  rpc ListSongsV1 (ListSongsV1Request) returns (ListSongsV1Response) {}
+  rpc RemoveSongV1 (RemoveSongV1Request) returns (RemoveSongV1Response) {}
+
+}
+
+message CreateSongV1Request {
+  string name = 1;
+  string author = 2;
+  int32 year = 3;
+}
+
+message CreateSongV1Response {
+  uint64 song_id = 1;
+}
+
+message DescribeSongV1Request {
+  uint64 song_id = 1;
+}
+
+message DescribeSongV1Response {
+  Song song = 1;
+}
+
+message ListSongsV1Request {
+  uint64 offset = 1;
+  uint64 limit = 2;
+}
+
+message ListSongsV1Response {
+  repeated Song songs = 1;
+}
+
+message RemoveSongV1Request {
+  uint64 song_id = 1;
+}
+
+message RemoveSongV1Response {
+  bool removed = 1;
+}
+
+message Song {
+  uint64  id = 1;
+  string name = 2;
+  string author = 3;
+  int32 year = 4;
+}
