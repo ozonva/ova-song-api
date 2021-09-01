@@ -44,3 +44,15 @@ dependencies:
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+.PHONY: migrations
+migrations: .migrations-deps .do-migrations
+
+.PHONY: .migrations-deps
+.migrations-deps:
+		go get -u github.com/pressly/goose/v3/cmd/goose
+
+.PHONY: .do-migrations
+.do-migrations:
+		goose -dir ./migrations postgres \
+					"user=ova_song_db_user password=ova_song_db_user dbname=ova_song_db sslmode=disable" up
