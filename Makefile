@@ -8,12 +8,12 @@ all: dependencies build
 run:
 	go run ./cmd/ova-song-api
 
-.PHONY: test
-test: mock
+.PHONY: tests
+tests: mocks
 	go test -v ./...
 
-PHONY: mock
-mock:
+PHONY: mocks
+mocks:
 	go generate ./...
 
 PHONY: generate
@@ -56,3 +56,7 @@ migrations: .migrations-deps .do-migrations
 .do-migrations:
 		goose -dir ./migrations postgres \
 					"user=ova_song_db_user password=ova_song_db_user dbname=ova_song_db sslmode=disable" up
+
+.PHONY: run-grpcui
+run-grpcui:
+	grpcui -plaintext -proto "./api/ova-song-api.proto" localhost:50051

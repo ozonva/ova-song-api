@@ -34,12 +34,28 @@ func (m *MockRepo) EXPECT() *MockRepoMockRecorder {
 	return m.recorder
 }
 
+// AddSong mocks base method.
+func (m *MockRepo) AddSong(arg0 models.Song) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddSong", arg0)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddSong indicates an expected call of AddSong.
+func (mr *MockRepoMockRecorder) AddSong(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSong", reflect.TypeOf((*MockRepo)(nil).AddSong), arg0)
+}
+
 // AddSongs mocks base method.
-func (m *MockRepo) AddSongs(arg0 []models.Song) error {
+func (m *MockRepo) AddSongs(arg0 []models.Song) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSongs", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddSongs indicates an expected call of AddSongs.
@@ -76,4 +92,19 @@ func (m *MockRepo) ListSongs(arg0, arg1 uint64) ([]models.Song, error) {
 func (mr *MockRepoMockRecorder) ListSongs(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSongs", reflect.TypeOf((*MockRepo)(nil).ListSongs), arg0, arg1)
+}
+
+// RemoveSong mocks base method.
+func (m *MockRepo) RemoveSong(arg0 uint64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveSong", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveSong indicates an expected call of RemoveSong.
+func (mr *MockRepoMockRecorder) RemoveSong(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSong", reflect.TypeOf((*MockRepo)(nil).RemoveSong), arg0)
 }
