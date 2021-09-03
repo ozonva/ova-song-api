@@ -85,7 +85,7 @@ func songSliceFromInts(slice []int) []models.Song {
 	result := make([]models.Song, len(slice))
 
 	for i, e := range slice {
-		result[i] = *models.CreateSong(0, strconv.Itoa(e), "", 0)
+		result[i] = models.CreateSong(0, strconv.Itoa(e), "", 0)
 	}
 
 	return result

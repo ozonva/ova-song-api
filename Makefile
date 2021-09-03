@@ -8,12 +8,12 @@ all: dependencies build
 run:
 	go run ./cmd/ova-song-api
 
-.PHONY: test
-test: mock
+.PHONY: tests
+tests: mocks
 	go test -v ./...
 
-PHONY: mock
-mock:
+PHONY: mocks
+mocks:
 	go generate ./...
 
 PHONY: generate
@@ -44,3 +44,19 @@ dependencies:
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+.PHONY: migrations
+migrations: .migrations-deps .do-migrations
+
+.PHONY: .migrations-deps
+.migrations-deps:
+		go get -u github.com/pressly/goose/v3/cmd/goose
+
+.PHONY: .do-migrations
+.do-migrations:
+		goose -dir ./migrations postgres \
+					"user=ova_song_db_user password=ova_song_db_user dbname=ova_song_db sslmode=disable" up
+
+.PHONY: run-grpcui
+run-grpcui:
+	grpcui -plaintext -proto "./api/ova-song-api.proto" localhost:50051

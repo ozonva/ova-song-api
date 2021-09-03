@@ -34,7 +34,7 @@ func (f *flusher) Flush(songs []models.Song) []models.Song {
 
 	var failedSongs []models.Song
 	for _, chunk := range chunks {
-		err := f.songsRepo.AddSongs(chunk)
+		_, err := f.songsRepo.AddSongs(chunk)
 		if err != nil {
 			failedSongs = append(failedSongs, chunk...)
 		}
