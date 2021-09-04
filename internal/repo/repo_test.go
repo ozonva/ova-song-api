@@ -100,6 +100,40 @@ var _ = Describe("Repo", func() {
 		})
 	})
 
+	Describe("Update song", func() {
+		var rowsAffected int64
+
+		JustBeforeEach(func() {
+			mock.ExpectExec("UPDATE songs SET").
+				WithArgs(someSong.Name, someSong.Author, someSong.Year, someSong.Id).
+				WillReturnResult(sqlmock.NewResult(0, rowsAffected))
+		})
+
+		Context("the song to be updated is present", func() {
+			BeforeEach(func() {
+				rowsAffected = 1
+			})
+
+			It("Should succeed and return true", func() {
+				succeed, err := repo.UpdateSong(someSong)
+				Expect(err).To(BeNil())
+				Expect(succeed).To(BeTrue())
+			})
+		})
+
+		Context("the song to be updated is absent", func() {
+			BeforeEach(func() {
+				rowsAffected = 0
+			})
+
+			It("Should succeed and return false", func() {
+				succeed, err := repo.UpdateSong(someSong)
+				Expect(err).To(BeNil())
+				Expect(succeed).To(BeFalse())
+			})
+		})
+	})
+
 	Describe("List songs", func() {
 		const (
 			limit  uint64 = 2
@@ -150,6 +184,5 @@ var _ = Describe("Repo", func() {
 				Expect(deleted).To(BeFalse())
 			})
 		})
-
 	})
 })

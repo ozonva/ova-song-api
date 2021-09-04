@@ -108,3 +108,18 @@ func (mr *MockRepoMockRecorder) RemoveSong(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSong", reflect.TypeOf((*MockRepo)(nil).RemoveSong), arg0)
 }
+
+// UpdateSong mocks base method.
+func (m *MockRepo) UpdateSong(arg0 models.Song) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSong", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSong indicates an expected call of UpdateSong.
+func (mr *MockRepoMockRecorder) UpdateSong(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSong", reflect.TypeOf((*MockRepo)(nil).UpdateSong), arg0)
+}

@@ -11,6 +11,7 @@ type Repo interface {
 	AddSongs(songs []models.Song) (int64, error)
 	ListSongs(limit, offset uint64) ([]models.Song, error)
 	DescribeSong(songId uint64) (*models.Song, error)
+	UpdateSong(song models.Song) (bool, error)
 	RemoveSong(songId uint64) (bool, error)
 }
 
@@ -110,6 +111,27 @@ func (r *repo) DescribeSong(songId uint64) (*models.Song, error) {
 		return nil, err
 	}
 	return &song, nil
+}
+
+func (r *repo) UpdateSong(song models.Song) (bool, error) {
+	query := squirrel.Update(r.tableName).
+		Set("name", song.Name).
+		Set("author", song.Author).
+		Set("year", song.Year).
+		Where(squirrel.Eq{"id": song.Id}).
+		RunWith(r.db).
+		PlaceholderFormat(squirrel.Dollar)
+
+	result, err := query.Exec()
+	if err != nil {
+		return false, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected > 0, nil
 }
 
 func (r *repo) RemoveSong(songId uint64) (bool, error) {

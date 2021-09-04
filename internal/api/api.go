@@ -7,6 +7,8 @@ import (
 	rp "github.com/ozonva/ova-song-api/internal/repo"
 	desc "github.com/ozonva/ova-song-api/pkg/ova-song-api"
 	log "github.com/rs/zerolog/log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type api struct {
@@ -97,6 +99,39 @@ func (s *api) DescribeSongV1(
 		Author: song.Author,
 		Year:   int32(song.Year),
 	}}, nil
+}
+
+func (s *api) UpdateSongV1(
+	ctx context.Context,
+	req *desc.UpdateSongV1Request,
+) (
+	*desc.UpdateSongV1Response,
+	error,
+) {
+	if req.Song == nil {
+		log.Error().Str("Method name", "UpdateSongV1").Msg("song should be provided")
+		return nil, status.Error(codes.InvalidArgument, "song should be provided")
+	}
+
+	log.Debug().
+		Str("Method name", "UpdateSongV1").
+		Uint64("id", req.Song.Id).
+		Str("Name", req.Song.Name).
+		Str("Author", req.Song.Author).
+		Int32("Year", req.Song.Year).
+		Msg("Method called")
+
+	updated, err := s.repo.UpdateSong(CreateSong(req.Song.Id, req.Song.Author, req.Song.Name, int(req.Song.Year)))
+
+	if err != nil {
+		log.Error().
+			Str("Method name", "UpdateSongV1").
+			Err(err).
+			Msg("Error returned from repo")
+		return nil, err
+	}
+
+	return &desc.UpdateSongV1Response{Updated: updated}, nil
 }
 
 func (s *api) ListSongsV1(
