@@ -62,21 +62,25 @@ var _ = Describe("Repo", func() {
 		})
 	})
 
-	Describe("Add Songs", func() {
+	Describe("Add songs", func() {
 		BeforeEach(func() {
-			query := mock.ExpectExec("INSERT INTO songs").
+			query := mock.ExpectQuery("INSERT INTO songs").
 				WithArgs(
 					songs[0].Name, songs[0].Author, songs[0].Year,
 					songs[1].Name, songs[1].Author, songs[1].Year,
 					songs[2].Name, songs[2].Author, songs[2].Year,
 					songs[3].Name, songs[3].Author, songs[3].Year,
 				)
-			query.WillReturnResult(sqlmock.NewResult(4, 4))
+			query.WillReturnRows(sqlmock.
+				NewRows([]string{"id"}).
+				AddRow(1).AddRow(2).AddRow(3).AddRow(4),
+			)
 		})
 
-		It("Should succeed", func() {
-			_, err := repo.AddSongs(songs)
+		It("Should succeed and return last inserted id", func() {
+			id, err := repo.AddSongs(songs)
 			Expect(err).To(BeNil())
+			Expect(id).To(Equal(int64(4)))
 		})
 	})
 

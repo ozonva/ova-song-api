@@ -41,6 +41,34 @@ func (s *api) CreateSongV1(
 	return &desc.CreateSongV1Response{SongId: uint64(newId)}, nil
 }
 
+func (s *api) CreateSongMultiV1(
+	ctx context.Context,
+	req *desc.CreateSongMultiV1Request,
+) (
+	*desc.CreateSongMultiV1Response,
+	error,
+) {
+	log.Debug().
+		Str("Method name", "CreateSongMultiV1").
+		Int("Total count", len(req.Songs)).
+		Msg("Method called")
+
+	var songs []Song
+	for i := range req.Songs {
+		songs = append(songs, CreateSong(0, req.Songs[i].Author, req.Songs[i].Name, int(req.Songs[i].Year)))
+	}
+	lastId, err := s.repo.AddSongs(songs)
+
+	if err != nil {
+		log.Error().
+			Str("Method name", "CreateSongMultiV1").
+			Err(err).
+			Msg("Error returned from repo")
+		return nil, err
+	}
+	return &desc.CreateSongMultiV1Response{LastInsertedId: uint64(lastId)}, nil
+}
+
 func (s *api) DescribeSongV1(
 	ctx context.Context,
 	req *desc.DescribeSongV1Request,

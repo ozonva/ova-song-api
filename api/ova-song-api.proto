@@ -7,6 +7,7 @@ option go_package = "github.com/ozonva/ova-song-api/pkg/ova-song-api;ova_song_ap
 service OvaSongApi {
 
   rpc CreateSongV1 (CreateSongV1Request) returns (CreateSongV1Response) {}
+  rpc CreateSongMultiV1 (CreateSongMultiV1Request) returns (CreateSongMultiV1Response) {}
   rpc DescribeSongV1 (DescribeSongV1Request) returns (DescribeSongV1Response) {}
   rpc ListSongsV1 (ListSongsV1Request) returns (ListSongsV1Response) {}
   rpc RemoveSongV1 (RemoveSongV1Request) returns (RemoveSongV1Response) {}
@@ -21,6 +22,14 @@ message CreateSongV1Request {
 
 message CreateSongV1Response {
   uint64 song_id = 1;
+}
+
+message CreateSongMultiV1Request {
+  repeated CreateSongV1Request songs = 1;
+}
+
+message CreateSongMultiV1Response {
+  uint64 last_inserted_id = 1;
 }
 
 message DescribeSongV1Request {

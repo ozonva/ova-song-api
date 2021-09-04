@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OvaSongApiClient interface {
 	CreateSongV1(ctx context.Context, in *CreateSongV1Request, opts ...grpc.CallOption) (*CreateSongV1Response, error)
+	CreateSongMultiV1(ctx context.Context, in *CreateSongMultiV1Request, opts ...grpc.CallOption) (*CreateSongMultiV1Response, error)
 	DescribeSongV1(ctx context.Context, in *DescribeSongV1Request, opts ...grpc.CallOption) (*DescribeSongV1Response, error)
 	ListSongsV1(ctx context.Context, in *ListSongsV1Request, opts ...grpc.CallOption) (*ListSongsV1Response, error)
 	RemoveSongV1(ctx context.Context, in *RemoveSongV1Request, opts ...grpc.CallOption) (*RemoveSongV1Response, error)
@@ -35,6 +36,15 @@ func NewOvaSongApiClient(cc grpc.ClientConnInterface) OvaSongApiClient {
 func (c *ovaSongApiClient) CreateSongV1(ctx context.Context, in *CreateSongV1Request, opts ...grpc.CallOption) (*CreateSongV1Response, error) {
 	out := new(CreateSongV1Response)
 	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/CreateSongV1", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ovaSongApiClient) CreateSongMultiV1(ctx context.Context, in *CreateSongMultiV1Request, opts ...grpc.CallOption) (*CreateSongMultiV1Response, error) {
+	out := new(CreateSongMultiV1Response)
+	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/CreateSongMultiV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +83,7 @@ func (c *ovaSongApiClient) RemoveSongV1(ctx context.Context, in *RemoveSongV1Req
 // for forward compatibility
 type OvaSongApiServer interface {
 	CreateSongV1(context.Context, *CreateSongV1Request) (*CreateSongV1Response, error)
+	CreateSongMultiV1(context.Context, *CreateSongMultiV1Request) (*CreateSongMultiV1Response, error)
 	DescribeSongV1(context.Context, *DescribeSongV1Request) (*DescribeSongV1Response, error)
 	ListSongsV1(context.Context, *ListSongsV1Request) (*ListSongsV1Response, error)
 	RemoveSongV1(context.Context, *RemoveSongV1Request) (*RemoveSongV1Response, error)
@@ -85,6 +96,9 @@ type UnimplementedOvaSongApiServer struct {
 
 func (UnimplementedOvaSongApiServer) CreateSongV1(context.Context, *CreateSongV1Request) (*CreateSongV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSongV1 not implemented")
+}
+func (UnimplementedOvaSongApiServer) CreateSongMultiV1(context.Context, *CreateSongMultiV1Request) (*CreateSongMultiV1Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSongMultiV1 not implemented")
 }
 func (UnimplementedOvaSongApiServer) DescribeSongV1(context.Context, *DescribeSongV1Request) (*DescribeSongV1Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DescribeSongV1 not implemented")
@@ -122,6 +136,24 @@ func _OvaSongApi_CreateSongV1_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).CreateSongV1(ctx, req.(*CreateSongV1Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OvaSongApi_CreateSongMultiV1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSongMultiV1Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OvaSongApiServer).CreateSongMultiV1(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ova.task.api.OvaSongApi/CreateSongMultiV1",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OvaSongApiServer).CreateSongMultiV1(ctx, req.(*CreateSongMultiV1Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -190,6 +222,10 @@ var OvaSongApi_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSongV1",
 			Handler:    _OvaSongApi_CreateSongV1_Handler,
+		},
+		{
+			MethodName: "CreateSongMultiV1",
+			Handler:    _OvaSongApi_CreateSongMultiV1_Handler,
 		},
 		{
 			MethodName: "DescribeSongV1",

@@ -40,6 +40,7 @@ func (r *repo) AddSong(songs models.Song) (int64, error) {
 func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 	query := squirrel.Insert(r.tableName).
 		Columns("name", "author", "year").
+		Suffix("RETURNING \"id\"").
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
@@ -47,16 +48,23 @@ func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 		query = query.Values(songs[i].Name, songs[i].Author, songs[i].Year)
 	}
 
-	result, err := query.Exec()
+	rows, err := query.Query()
 	if err != nil {
 		return 0, err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
+	if err = rows.Err(); err != nil {
 		return 0, err
 	}
-	return rowsAffected, nil
+
+	var id int64
+	for rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return id, nil
 }
 
 func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
