@@ -7,8 +7,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	api "github.com/ozonva/ova-song-api/internal/api"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
+	"github.com/ozonva/ova-song-api/internal/startup"
 	desc "github.com/ozonva/ova-song-api/pkg/ova-song-api"
-	log "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 )
 
@@ -17,6 +18,18 @@ const (
 )
 
 func main() {
+	tracerCloser, err := startup.InitJaegerTracer("ova-song-api", "127.0.0.1", ":6831")
+	if err != nil {
+		log.Error().Err(err).Msg("Could not initialize jaeger tracer")
+	} else {
+		defer func() {
+			if err := tracerCloser.Close(); err != nil {
+				log.Error().Err(err).Msg("Failed to close tracer")
+			}
+		}()
+		log.Info().Msg("Tracer started")
+	}
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatal().Msgf("failed to listen: %v", err)

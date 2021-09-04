@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/opentracing/opentracing-go"
+	olog "github.com/opentracing/opentracing-go/log"
 	. "github.com/ozonva/ova-song-api/internal/models"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
 	"github.com/ozonva/ova-song-api/internal/utils"
@@ -12,6 +14,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+const songIdTag = "song_id"
 
 type api struct {
 	desc.UnimplementedOvaSongApiServer
@@ -34,7 +38,12 @@ func (s *api) CreateSongV1(
 		Int32("Year", req.Year).
 		Msg("Method called")
 
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan("CreateSongV1")
+	defer span.Finish()
+
 	newId, err := s.repo.AddSong(CreateSong(0, req.Author, req.Name, int(req.Year)))
+	span.SetTag(songIdTag, newId)
 
 	if err != nil {
 		log.Error().
@@ -53,10 +62,16 @@ func (s *api) CreateSongMultiV1(
 	*desc.CreateSongMultiV1Response,
 	error,
 ) {
+	const methodName = "CreateSongMultiV1"
+
 	log.Debug().
-		Str("Method name", "CreateSongMultiV1").
+		Str("Method name", methodName).
 		Int("Total count", len(req.Songs)).
 		Msg("Method called")
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(methodName)
+	defer span.Finish()
 
 	if len(req.Songs) == 0 {
 		log.Error().Str("Method name", "CreateSongMulti").Msg("songs should be provided")
@@ -68,23 +83,36 @@ func (s *api) CreateSongMultiV1(
 		songs = append(songs, CreateSong(0, req.Songs[i].Author, req.Songs[i].Name, int(req.Songs[i].Year)))
 	}
 
-	chunks, err := utils.DivideSliceOfSongs(songs, s.batchSize)
+	span.LogFields(olog.Int("Songs count", len(songs)))
+
+	batch, err := utils.DivideSliceOfSongs(songs, s.batchSize)
 	if err != nil {
 		return nil, err
 	}
 
+	span.LogFields(olog.Int("Chunks count", len(batch)))
+	span.LogFields(olog.Int("Chunk size", s.batchSize))
+
 	var failedCount int
 	var lastId int64
-	for _, chunk := range chunks {
-		id, err := s.repo.AddSongs(chunk)
+	for i := range batch {
+		bSpan := opentracing.StartSpan(methodName+" Batch", opentracing.ChildOf(span.Context()))
+		bSpan.LogFields(olog.Int("Batch number", i))
+		bSpan.LogFields(olog.Int("Songs count", len(batch[i])))
+
+		id, err := s.repo.AddSongs(batch[i])
 		if err != nil {
-			failedCount += len(chunk)
+			failedCount += len(batch[i])
+			bSpan.LogFields(olog.Error(err))
 		} else {
 			lastId = id
 		}
+
+		bSpan.Finish()
 	}
 
 	if failedCount > 0 {
+		span.LogFields(olog.Int("Songs failed", failedCount))
 		log.Warn().
 			Str("Method name", "CreateSongMultiV1").
 			Int("count", failedCount).
@@ -92,6 +120,8 @@ func (s *api) CreateSongMultiV1(
 	}
 
 	if err != nil {
+		span.LogFields(olog.Error(err))
+
 		log.Error().
 			Str("Method name", "CreateSongMultiV1").
 			Err(err).
@@ -108,16 +138,25 @@ func (s *api) DescribeSongV1(
 	*desc.DescribeSongV1Response,
 	error,
 ) {
-	log.Info().
-		Str("Method name", "DescribeSongV1").
+	const methodName = "DescribeSongV1"
+
+	log.Debug().
+		Str("Method name", methodName).
 		Uint64("SongId", req.SongId).
 		Msg("Method called")
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(methodName)
+	defer span.Finish()
+	span.SetTag(songIdTag, req.SongId)
+	span.SetTag("song_id2", nil)
 
 	song, err := s.repo.DescribeSong(req.SongId)
 
 	if err != nil {
+		span.LogFields(olog.Error(err))
 		log.Error().
-			Str("Method name", "DescribeSongV1").
+			Str("Method name", methodName).
 			Err(err).
 			Msg("Error returned from repo")
 		return nil, err
@@ -138,22 +177,31 @@ func (s *api) UpdateSongV1(
 	*desc.UpdateSongV1Response,
 	error,
 ) {
+	const methodName = "UpdateSongV1"
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(methodName)
+	defer span.Finish()
+
 	if req.Song == nil {
-		log.Error().Str("Method name", "UpdateSongV1").Msg("song should be provided")
+		log.Error().Str("Method name", methodName).Msg("song should be provided")
 		return nil, status.Error(codes.InvalidArgument, "song should be provided")
 	}
 
 	log.Debug().
-		Str("Method name", "UpdateSongV1").
+		Str("Method name", methodName).
 		Uint64("id", req.Song.Id).
 		Str("Name", req.Song.Name).
 		Str("Author", req.Song.Author).
 		Int32("Year", req.Song.Year).
 		Msg("Method called")
 
+	span.SetTag(songIdTag, req.Song.Id)
+
 	updated, err := s.repo.UpdateSong(CreateSong(req.Song.Id, req.Song.Author, req.Song.Name, int(req.Song.Year)))
 
 	if err != nil {
+		span.LogFields(olog.Error(err))
 		log.Error().
 			Str("Method name", "UpdateSongV1").
 			Err(err).
@@ -171,15 +219,25 @@ func (s *api) ListSongsV1(
 	*desc.ListSongsV1Response,
 	error,
 ) {
+	const methodName = "ListSongsV1"
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(methodName)
+	defer span.Finish()
+
 	log.Debug().
-		Str("Method name", "ListSongsV1").
+		Str("Method name", methodName).
 		Uint64("Offset", req.Offset).
 		Uint64("Limit", req.Limit).
 		Msg("Method called")
 
+	span.LogFields(olog.Uint64("Offset", req.Offset))
+	span.LogFields(olog.Uint64("Limit", req.Limit))
+
 	songs, err := s.repo.ListSongs(req.Limit, req.Offset)
 
 	if err != nil {
+		span.LogFields(olog.Error(err))
 		log.Error().
 			Str("Method name", "ListSongsV1").
 			Err(err).
@@ -207,14 +265,22 @@ func (s *api) RemoveSongV1(
 	*desc.RemoveSongV1Response,
 	error,
 ) {
+	const methodName = "RemoveSongV1"
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(methodName)
+	defer span.Finish()
+
 	log.Debug().
-		Str("Method name", "RemoveSongV1").
+		Str("Method name", methodName).
 		Uint64("SongId", req.SongId).
 		Msg("Method called")
+	span.SetTag(songIdTag, req.SongId)
 
 	removed, err := s.repo.RemoveSong(req.SongId)
 
 	if err != nil {
+		span.LogFields(olog.Error(err))
 		log.Error().
 			Str("Method name", "RemoveSongV1").
 			Err(err).
