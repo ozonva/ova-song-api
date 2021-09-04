@@ -2,9 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 
 	. "github.com/ozonva/ova-song-api/internal/models"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
+	"github.com/ozonva/ova-song-api/internal/utils"
 	desc "github.com/ozonva/ova-song-api/pkg/ova-song-api"
 	log "github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
@@ -14,7 +16,8 @@ import (
 type api struct {
 	desc.UnimplementedOvaSongApiServer
 
-	repo rp.Repo
+	repo      rp.Repo
+	batchSize int
 }
 
 func (s *api) CreateSongV1(
@@ -55,11 +58,38 @@ func (s *api) CreateSongMultiV1(
 		Int("Total count", len(req.Songs)).
 		Msg("Method called")
 
+	if len(req.Songs) == 0 {
+		log.Error().Str("Method name", "CreateSongMulti").Msg("songs should be provided")
+		return nil, status.Error(codes.InvalidArgument, "songs should be provided")
+	}
+
 	var songs []Song
 	for i := range req.Songs {
 		songs = append(songs, CreateSong(0, req.Songs[i].Author, req.Songs[i].Name, int(req.Songs[i].Year)))
 	}
-	lastId, err := s.repo.AddSongs(songs)
+
+	chunks, err := utils.DivideSliceOfSongs(songs, s.batchSize)
+	if err != nil {
+		return nil, err
+	}
+
+	var failedCount int
+	var lastId int64
+	for _, chunk := range chunks {
+		id, err := s.repo.AddSongs(chunk)
+		if err != nil {
+			failedCount += len(chunk)
+		} else {
+			lastId = id
+		}
+	}
+
+	if failedCount > 0 {
+		log.Warn().
+			Str("Method name", "CreateSongMultiV1").
+			Int("count", failedCount).
+			Msg("Failed so save some songs")
+	}
 
 	if err != nil {
 		log.Error().
@@ -194,6 +224,9 @@ func (s *api) RemoveSongV1(
 	return &desc.RemoveSongV1Response{Removed: removed}, nil
 }
 
-func NewSongApi(repo rp.Repo) desc.OvaSongApiServer {
-	return &api{repo: repo}
+func NewSongApi(repo rp.Repo, batchSize int) (desc.OvaSongApiServer, error) {
+	if batchSize <= 0 {
+		return nil, errors.New("chunkSize must be positive")
+	}
+	return &api{repo: repo, batchSize: batchSize}, nil
 }

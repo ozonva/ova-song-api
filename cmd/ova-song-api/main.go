@@ -45,6 +45,10 @@ func createSongApi() desc.OvaSongApiServer {
 	log.Info().Msg("Connected to db")
 
 	repo := rp.NewRepo(db)
-	songApi := api.NewSongApi(repo)
+	const batchSize = 2
+	songApi, err := api.NewSongApi(repo, batchSize)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create song api")
+	}
 	return songApi
 }
