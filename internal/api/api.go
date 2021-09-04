@@ -106,7 +106,7 @@ func (s *api) ListSongsV1(
 	*desc.ListSongsV1Response,
 	error,
 ) {
-	log.Info().
+	log.Debug().
 		Str("Method name", "ListSongsV1").
 		Uint64("Offset", req.Offset).
 		Uint64("Limit", req.Limit).
@@ -142,7 +142,7 @@ func (s *api) RemoveSongV1(
 	*desc.RemoveSongV1Response,
 	error,
 ) {
-	log.Info().
+	log.Debug().
 		Str("Method name", "RemoveSongV1").
 		Uint64("SongId", req.SongId).
 		Msg("Method called")
