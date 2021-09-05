@@ -23,10 +23,10 @@ var _ = Describe("Repo", func() {
 		repo rp.Repo
 
 		songs = []models.Song{
-			{1, "Author 1", "Name 1", 2001},
-			{2, "Author 2", "Name 2", 2002},
-			{3, "Author 3", "Name 3", 2003},
-			{4, "Author 4", "Name 4", 2004},
+			{Id: 1, Author: "Author 1", Name: "Name 1", Year: 2001},
+			{Id: 2, Author: "Author 2", Name: "Name 2", Year: 2002},
+			{Id: 3, Author: "Author 3", Name: "Name 3", Year: 2003},
+			{Id: 4, Author: "Author 4", Name: "Name 4", Year: 2004},
 		}
 		someSong = songs[0]
 	)
