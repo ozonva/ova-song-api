@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	olog "github.com/opentracing/opentracing-go/log"
+	br "github.com/ozonva/ova-song-api/internal/broker"
 	. "github.com/ozonva/ova-song-api/internal/models"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
 	"github.com/ozonva/ova-song-api/internal/utils"
@@ -22,6 +23,7 @@ type api struct {
 
 	repo      rp.Repo
 	batchSize int
+	broker    br.Broker
 }
 
 func (s *api) CreateSongV1(
@@ -31,27 +33,32 @@ func (s *api) CreateSongV1(
 	*desc.CreateSongV1Response,
 	error,
 ) {
+	const methodName = "CreateSongV1"
 	log.Debug().
-		Str("Method name", "CreateSongV1").
+		Str("Method name", methodName).
 		Str("name", req.Name).
 		Str("Author", req.Author).
 		Int32("Year", req.Year).
 		Msg("Method called")
 
 	tracer := opentracing.GlobalTracer()
-	span := tracer.StartSpan("CreateSongV1")
+	span := tracer.StartSpan(methodName)
 	defer span.Finish()
 
 	newId, err := s.repo.AddSong(CreateSong(0, req.Author, req.Name, int(req.Year)))
-	span.SetTag(songIdTag, newId)
-
 	if err != nil {
-		log.Error().
-			Str("Method name", "CreateSongV1").
-			Err(err).
-			Msg("Error returned from repo")
+		log.Error().Str("Method name", methodName).Err(err).Msg("Error returned from repo")
 		return nil, err
 	}
+	span.SetTag(songIdTag, newId)
+
+	err = s.broker.SendEvent(br.NewCreateEvent(newId))
+	if err != nil {
+		span.LogFields(olog.Error(err))
+		log.Error().Str("Method name", methodName).Err(err).Msg("Failed to send event")
+		// graceful; no `return` here
+	}
+
 	return &desc.CreateSongV1Response{SongId: uint64(newId)}, nil
 }
 
@@ -106,6 +113,12 @@ func (s *api) CreateSongMultiV1(
 			bSpan.LogFields(olog.Error(err))
 		} else {
 			lastId = id
+			err = s.broker.SendEvent(br.NewCreateMultiEvent(id))
+			if err != nil {
+				bSpan.LogFields(olog.Error(err))
+				log.Error().Str("Method name", methodName).Err(err).Int("Batch no", i).Msg("Failed to send event")
+				// graceful; no `return` here
+			}
 		}
 
 		bSpan.Finish()
@@ -152,7 +165,6 @@ func (s *api) DescribeSongV1(
 	span.SetTag("song_id2", nil)
 
 	song, err := s.repo.DescribeSong(req.SongId)
-
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
@@ -199,7 +211,6 @@ func (s *api) UpdateSongV1(
 	span.SetTag(songIdTag, req.Song.Id)
 
 	updated, err := s.repo.UpdateSong(CreateSong(req.Song.Id, req.Song.Author, req.Song.Name, int(req.Song.Year)))
-
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
@@ -207,6 +218,15 @@ func (s *api) UpdateSongV1(
 			Err(err).
 			Msg("Error returned from repo")
 		return nil, err
+	}
+
+	if updated {
+		err = s.broker.SendEvent(br.NewUpdateEvent(int64(req.Song.Id)))
+		if err != nil {
+			span.LogFields(olog.Error(err))
+			log.Error().Str("Method name", methodName).Err(err).Msg("Failed to send event")
+			// graceful; no `return` here
+		}
 	}
 
 	return &desc.UpdateSongV1Response{Updated: updated}, nil
@@ -278,7 +298,6 @@ func (s *api) RemoveSongV1(
 	span.SetTag(songIdTag, req.SongId)
 
 	removed, err := s.repo.RemoveSong(req.SongId)
-
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
@@ -287,12 +306,22 @@ func (s *api) RemoveSongV1(
 			Msg("Error returned from repo")
 		return nil, err
 	}
+
+	if removed {
+		err = s.broker.SendEvent(br.NewRemoveEvent(int64(req.SongId)))
+		if err != nil {
+			span.LogFields(olog.Error(err))
+			log.Error().Str("Method name", methodName).Err(err).Msg("Failed to send event")
+			// graceful; no `return` here
+		}
+	}
+
 	return &desc.RemoveSongV1Response{Removed: removed}, nil
 }
 
-func NewSongApi(repo rp.Repo, batchSize int) (desc.OvaSongApiServer, error) {
+func NewSongApi(repo rp.Repo, batchSize int, broker br.Broker) (desc.OvaSongApiServer, error) {
 	if batchSize <= 0 {
 		return nil, errors.New("chunkSize must be positive")
 	}
-	return &api{repo: repo, batchSize: batchSize}, nil
+	return &api{repo: repo, batchSize: batchSize, broker: broker}, nil
 }
