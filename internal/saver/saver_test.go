@@ -108,16 +108,16 @@ var _ = Describe("SaverBackend", func() {
 		period   = time.Hour // whatever
 		someSong = Song{Id: 100, Author: "100", Name: "100", Year: 100}
 		songs    = []Song{
-			{1, "Author 1", "Name 1", 2001},
-			{2, "Author 2", "Name 2", 2002},
-			{3, "Author 3", "Name 3", 2003},
-			{4, "Author 4", "Name 4", 2004},
-			{5, "Author 5", "Name 5", 2005},
-			{6, "Author 6", "Name 6", 2006},
-			{7, "Author 7", "Name 7", 2007},
-			{8, "Author 8", "Name 8", 2008},
-			{9, "Author 9", "Name 9", 2009},
-			{10, "Author 10", "Name 10", 2010},
+			{Id: 1, Author: "Author 1", Name: "Name 1", Year: 2001},
+			{Id: 2, Author: "Author 2", Name: "Name 2", Year: 2002},
+			{Id: 3, Author: "Author 3", Name: "Name 3", Year: 2003},
+			{Id: 4, Author: "Author 4", Name: "Name 4", Year: 2004},
+			{Id: 5, Author: "Author 5", Name: "Name 5", Year: 2005},
+			{Id: 6, Author: "Author 6", Name: "Name 6", Year: 2006},
+			{Id: 7, Author: "Author 7", Name: "Name 7", Year: 2007},
+			{Id: 8, Author: "Author 8", Name: "Name 8", Year: 2008},
+			{Id: 9, Author: "Author 9", Name: "Name 9", Year: 2009},
+			{Id: 10, Author: "Author 10", Name: "Name 10", Year: 2010},
 		}
 
 		// we have to wait for the backend to complete in order to be sure that the gomock can record all calls
