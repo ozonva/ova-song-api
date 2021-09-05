@@ -3,10 +3,10 @@ package api
 import (
 	"context"
 	"errors"
-
 	"github.com/opentracing/opentracing-go"
 	olog "github.com/opentracing/opentracing-go/log"
 	br "github.com/ozonva/ova-song-api/internal/broker"
+	"github.com/ozonva/ova-song-api/internal/metrics"
 	. "github.com/ozonva/ova-song-api/internal/models"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
 	"github.com/ozonva/ova-song-api/internal/utils"
@@ -51,6 +51,8 @@ func (s *api) CreateSongV1(
 		return nil, err
 	}
 	span.SetTag(songIdTag, newId)
+
+	metrics.Counters.AddSucceeds.Inc()
 
 	err = s.broker.SendEvent(br.NewCreateEvent(newId))
 	if err != nil {
@@ -130,17 +132,11 @@ func (s *api) CreateSongMultiV1(
 			Str("Method name", "CreateSongMultiV1").
 			Int("count", failedCount).
 			Msg("Failed so save some songs")
+	} else {
+		// succeed only if no one failed
+		metrics.Counters.AddMultiSucceeds.Inc()
 	}
 
-	if err != nil {
-		span.LogFields(olog.Error(err))
-
-		log.Error().
-			Str("Method name", "CreateSongMultiV1").
-			Err(err).
-			Msg("Error returned from repo")
-		return nil, err
-	}
 	return &desc.CreateSongMultiV1Response{LastInsertedId: uint64(lastId)}, nil
 }
 
@@ -221,6 +217,8 @@ func (s *api) UpdateSongV1(
 	}
 
 	if updated {
+		metrics.Counters.UpdateSucceeds.Inc()
+
 		err = s.broker.SendEvent(br.NewUpdateEvent(int64(req.Song.Id)))
 		if err != nil {
 			span.LogFields(olog.Error(err))
@@ -308,6 +306,8 @@ func (s *api) RemoveSongV1(
 	}
 
 	if removed {
+		metrics.Counters.DeleteSucceeds.Inc()
+
 		err = s.broker.SendEvent(br.NewRemoveEvent(int64(req.SongId)))
 		if err != nil {
 			span.LogFields(olog.Error(err))
