@@ -1,5 +1,5 @@
 .PHONY: build
-build: generate .build
+build:	generate .build
 
 .PHONY: all
 all: dependencies build
@@ -7,6 +7,13 @@ all: dependencies build
 .PHONY: run
 run:
 	go run ./cmd/ova-song-api
+
+.PHONY: run-lint
+run-lint: lint
+
+.PHONY: lint
+lint:
+	 golangci-lint run
 
 .PHONY: tests
 tests: mocks
