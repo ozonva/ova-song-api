@@ -1,6 +1,7 @@
 package saver
 
 import (
+	"context"
 	"time"
 
 	"github.com/ozonva/ova-song-api/internal/models"
@@ -8,7 +9,9 @@ import (
 )
 
 type Saver interface {
-	Save(song models.Song) // no error returned; see slack
+	// Save queues given song for saving.
+	// Note that ctx argument should be used only for queueing not for actual saving
+	Save(ctx context.Context, song models.Song) // no error returned; see slack
 	Close()
 }
 
@@ -17,8 +20,12 @@ type saver struct {
 	closeChan chan<- struct{}
 }
 
-func (s *saver) Save(song models.Song) {
-	s.songChan <- song
+// Save queues given song for saving
+func (s *saver) Save(ctx context.Context, song models.Song) {
+	select {
+	case <-ctx.Done():
+	case s.songChan <- song:
+	}
 }
 
 func (s *saver) Close() {
@@ -28,7 +35,7 @@ func (s *saver) Close() {
 }
 
 type Flusher interface {
-	Flush(songs []models.Song) []models.Song
+	Flush(ctx context.Context, songs []models.Song) []models.Song
 }
 
 type saverBackend struct {
@@ -70,7 +77,7 @@ func (s *saverBackend) doSave() {
 	if len(s.songsBuffer) == 0 {
 		return
 	}
-	failed := s.flusher.Flush(s.songsBuffer)
+	failed := s.flusher.Flush(context.Background(), s.songsBuffer)
 	s.songsBuffer = s.songsBuffer[:0]
 	s.songsBuffer = append(s.songsBuffer, failed...)
 }

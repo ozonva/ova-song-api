@@ -5,7 +5,6 @@ import (
 
 	"encoding/json"
 	"github.com/Shopify/sarama"
-	"github.com/rs/zerolog/log"
 )
 
 type Broker interface {
@@ -23,7 +22,6 @@ func (b *broker) SendEvent(event SongEvent) error {
 	if err != nil {
 		return err
 	}
-	log.Debug().Bytes("Send event", bytes).Msg("Event marshalled")
 
 	msg := &sarama.ProducerMessage{
 		Topic:     b.topic,

@@ -1,6 +1,7 @@
 package flusher_test
 
 import (
+	"context"
 	"errors"
 
 	"github.com/golang/mock/gomock"
@@ -17,6 +18,7 @@ var _ = Describe("Flusher", func() {
 		ctrl     *gomock.Controller
 		mockRepo *mocks.MockRepo
 		fls      flusher.Flusher
+		ctx      context.Context
 
 		songs = []models.Song{
 			{1, "Author 1", "Name 1", 2001},
@@ -39,6 +41,8 @@ var _ = Describe("Flusher", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockRepo = mocks.NewMockRepo(ctrl)
+
+		ctx = context.Background()
 	})
 
 	AfterEach(func() {
@@ -47,7 +51,7 @@ var _ = Describe("Flusher", func() {
 
 	JustBeforeEach(func() {
 		fls = flusher.NewFlusher(chunkSize, mockRepo)
-		failedSongs = fls.Flush(input)
+		failedSongs = fls.Flush(ctx, input)
 	})
 
 	Describe("with nil input", func() {
@@ -100,7 +104,7 @@ var _ = Describe("Flusher", func() {
 		Context("with a chunk size greater than songs size", func() {
 			BeforeEach(func() {
 				chunkSize = len(songs) + 5
-				mockRepo.EXPECT().AddSongs(songs).Return(int64(0), nil).Times(1)
+				mockRepo.EXPECT().AddSongs(ctx, songs).Return(int64(0), nil).Times(1)
 			})
 
 			It("should return empty", func() {
@@ -111,7 +115,7 @@ var _ = Describe("Flusher", func() {
 		Context("with a chunk size equals to songs size", func() {
 			BeforeEach(func() {
 				chunkSize = len(songs)
-				mockRepo.EXPECT().AddSongs(songs).Return(int64(0), nil).Times(1)
+				mockRepo.EXPECT().AddSongs(ctx, songs).Return(int64(0), nil).Times(1)
 			})
 
 			It("should return empty", func() {
@@ -124,10 +128,10 @@ var _ = Describe("Flusher", func() {
 				chunkSize = len(songs) / 3
 
 				gomock.InOrder(
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), nil),
 				)
 			})
 
@@ -141,10 +145,10 @@ var _ = Describe("Flusher", func() {
 				chunkSize = len(songs) / 3
 
 				gomock.InOrder(
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
-					mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
+					mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), nil),
 				)
 			})
 
@@ -161,10 +165,10 @@ var _ = Describe("Flusher", func() {
 			Context("on the second chunk", func() {
 				BeforeEach(func() {
 					gomock.InOrder(
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), nil),
 					)
 				})
 
@@ -176,10 +180,10 @@ var _ = Describe("Flusher", func() {
 			Context("on the second chunk", func() {
 				BeforeEach(func() {
 					gomock.InOrder(
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), nil),
 					)
 				})
 
@@ -191,10 +195,10 @@ var _ = Describe("Flusher", func() {
 			Context("on the first and the third chunks", func() {
 				BeforeEach(func() {
 					gomock.InOrder(
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), errors.New("another whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), nil),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), errors.New("another whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), nil),
 					)
 				})
 
@@ -206,10 +210,10 @@ var _ = Describe("Flusher", func() {
 			Context("on the all chunks", func() {
 				BeforeEach(func() {
 					gomock.InOrder(
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), errors.New("another whatever")),
-						mockRepo.EXPECT().AddSongs(songs[chunkSize*3:]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*0:chunkSize*0+chunkSize]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*1:chunkSize*1+chunkSize]).Return(int64(0), errors.New("whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*2:chunkSize*2+chunkSize]).Return(int64(0), errors.New("another whatever")),
+						mockRepo.EXPECT().AddSongs(ctx, songs[chunkSize*3:]).Return(int64(0), errors.New("whatever")),
 					)
 				})
 

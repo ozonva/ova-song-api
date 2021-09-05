@@ -1,18 +1,20 @@
 package repo
 
 import (
+	. "context"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/ozonva/ova-song-api/internal/models"
 )
 
 type Repo interface {
-	AddSong(song models.Song) (int64, error)
-	AddSongs(songs []models.Song) (int64, error)
-	ListSongs(limit, offset uint64) ([]models.Song, error)
-	DescribeSong(songId uint64) (*models.Song, error)
-	UpdateSong(song models.Song) (bool, error)
-	RemoveSong(songId uint64) (bool, error)
+	AddSong(ctx Context, song models.Song) (int64, error)
+	AddSongs(ctx Context, songs []models.Song) (int64, error)
+	ListSongs(ctx Context, limit, offset uint64) ([]models.Song, error)
+	DescribeSong(ctx Context, songId uint64) (*models.Song, error)
+	UpdateSong(ctx Context, song models.Song) (bool, error)
+	RemoveSong(ctx Context, songId uint64) (bool, error)
 }
 
 type repo struct {
@@ -20,7 +22,7 @@ type repo struct {
 	tableName string
 }
 
-func (r *repo) AddSong(songs models.Song) (int64, error) {
+func (r *repo) AddSong(ctx Context, songs models.Song) (int64, error) {
 	query := squirrel.Insert(r.tableName).
 		Columns("name", "author", "year").
 		Suffix("RETURNING \"id\"").
@@ -30,7 +32,7 @@ func (r *repo) AddSong(songs models.Song) (int64, error) {
 	query = query.Values(songs.Name, songs.Author, songs.Year)
 
 	var insertedID int64
-	err := query.QueryRow().Scan(&insertedID)
+	err := query.QueryRowContext(ctx).Scan(&insertedID)
 	if err != nil {
 		return 0, err
 	}
@@ -38,7 +40,7 @@ func (r *repo) AddSong(songs models.Song) (int64, error) {
 	return insertedID, nil
 }
 
-func (r *repo) AddSongs(songs []models.Song) (int64, error) {
+func (r *repo) AddSongs(ctx Context, songs []models.Song) (int64, error) {
 	query := squirrel.Insert(r.tableName).
 		Columns("name", "author", "year").
 		Suffix("RETURNING \"id\"").
@@ -49,7 +51,7 @@ func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 		query = query.Values(songs[i].Name, songs[i].Author, songs[i].Year)
 	}
 
-	rows, err := query.Query()
+	rows, err := query.QueryContext(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -68,7 +70,7 @@ func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 	return id, nil
 }
 
-func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
+func (r *repo) ListSongs(ctx Context, limit, offset uint64) ([]models.Song, error) {
 	query := squirrel.Select("id", "name", "author", "year").
 		From(r.tableName).
 		Limit(limit).
@@ -76,7 +78,7 @@ func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
-	rows, err := query.Query()
+	rows, err := query.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -97,14 +99,14 @@ func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
 	return songs, nil
 }
 
-func (r *repo) DescribeSong(songId uint64) (*models.Song, error) {
+func (r *repo) DescribeSong(ctx Context, songId uint64) (*models.Song, error) {
 	query := squirrel.Select("id", "name", "author", "year").
 		From(r.tableName).
 		Where(squirrel.Eq{"id": songId}).
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
-	row := query.QueryRow()
+	row := query.QueryRowContext(ctx)
 
 	var song models.Song
 	if err := row.Scan(&song.Id, &song.Name, &song.Author, &song.Year); err != nil {
@@ -113,7 +115,7 @@ func (r *repo) DescribeSong(songId uint64) (*models.Song, error) {
 	return &song, nil
 }
 
-func (r *repo) UpdateSong(song models.Song) (bool, error) {
+func (r *repo) UpdateSong(ctx Context, song models.Song) (bool, error) {
 	query := squirrel.Update(r.tableName).
 		Set("name", song.Name).
 		Set("author", song.Author).
@@ -122,7 +124,7 @@ func (r *repo) UpdateSong(song models.Song) (bool, error) {
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
-	result, err := query.Exec()
+	result, err := query.ExecContext(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -134,13 +136,13 @@ func (r *repo) UpdateSong(song models.Song) (bool, error) {
 	return affected > 0, nil
 }
 
-func (r *repo) RemoveSong(songId uint64) (bool, error) {
+func (r *repo) RemoveSong(ctx Context, songId uint64) (bool, error) {
 	query := squirrel.Delete(r.tableName).
 		Where(squirrel.Eq{"id": songId}).
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
-	result, err := query.Exec()
+	result, err := query.ExecContext(ctx)
 
 	if err != nil {
 		return false, err
