@@ -1,6 +1,7 @@
 package saver
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ var _ = Describe("Saver", func() {
 		svr       Saver
 		songChan  chan Song
 		closeChan chan struct{}
+		ctx       context.Context
 
 		someSong = Song{Id: 1, Author: "1", Name: "1", Year: 1}
 	)
@@ -29,13 +31,14 @@ var _ = Describe("Saver", func() {
 	BeforeEach(func() {
 		songChan = make(chan Song, capacity)
 		closeChan = make(chan struct{})
+		ctx = context.Background()
 
 		svr = &saver{songChan, closeChan}
 	})
 
 	When("Save() called", func() {
 		BeforeEach(func() {
-			svr.Save(someSong)
+			svr.Save(ctx, someSong)
 		})
 
 		It("will push song into the songs channel", func() {
@@ -43,12 +46,42 @@ var _ = Describe("Saver", func() {
 		})
 	})
 
-	When("Close() called", func() {
+	When("Context cancelled while Save() called", func() {
+		var (
+			cancelContext context.Context
+			cancelFun     context.CancelFunc
+			unblocked     chan struct{}
+		)
 
 		BeforeEach(func() {
-			defer GinkgoRecover()
+			cancelContext, cancelFun = context.WithCancel(ctx)
+			unblocked = make(chan struct{})
+
+			// should block so called in separate goroutine
+			go func() {
+				defer GinkgoRecover()
+				for i := 0; i < capacity+1; i++ {
+					svr.Save(cancelContext, someSong)
+				}
+
+				close(unblocked)
+			}()
+		})
+
+		It("will cancel saving the last song", func() {
+			Eventually(songChan).Should(HaveLen(capacity))
+			cancelFun()
+			Eventually(unblocked).Should(BeClosed())
+		})
+	})
+
+	When("Close() called", func() {
+		BeforeEach(func() {
 			// called in a separate goroutine to avoid blocking due to using an unbuffered channel
-			go svr.Close()
+			go func() {
+				defer GinkgoRecover()
+				svr.Close()
+			}()
 		})
 
 		It("will close songs and `close` channel", func() {
@@ -149,7 +182,7 @@ var _ = Describe("SaverBackend", func() {
 
 	When("one song received", func() {
 		BeforeEach(func() {
-			mockFlusher.EXPECT().Flush([]Song{someSong}).Times(1)
+			mockFlusher.EXPECT().Flush(notNil(), []Song{someSong}).Times(1)
 		})
 
 		AfterEach(func() {
@@ -174,7 +207,7 @@ var _ = Describe("SaverBackend", func() {
 
 		When("the close signals arrived", func() {
 			It("will flush all songs and stop the timer", func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Times(1)
 			})
 		})
 
@@ -184,14 +217,14 @@ var _ = Describe("SaverBackend", func() {
 			})
 
 			It("will flush contained songs and reset the ticker", func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Times(1)
 				mockTicker.EXPECT().Reset(period).Times(1)
 			})
 		})
 
 		Context("flusher will fail to save the second and the fourth songs", func() {
 			BeforeEach(func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Return([]Song{songs[1], songs[3]}).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Return([]Song{songs[1], songs[3]}).Times(1)
 			})
 
 			When("the ticker does tick", func() {
@@ -200,7 +233,7 @@ var _ = Describe("SaverBackend", func() {
 				})
 
 				It("will flush contained songs, reset the ticker and flush remaining songs later", func() {
-					mockFlusher.EXPECT().Flush([]Song{songs[1], songs[3]}).Times(1)
+					mockFlusher.EXPECT().Flush(notNil(), []Song{songs[1], songs[3]}).Times(1)
 					mockTicker.EXPECT().Reset(period).Times(1)
 				})
 			})
@@ -220,7 +253,7 @@ var _ = Describe("SaverBackend", func() {
 			})
 
 			It("should save the all the songs(when closed)", func() {
-				mockFlusher.EXPECT().Flush(expected).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), expected).Times(1)
 			})
 
 			When("the ticker does tick", func() {
@@ -229,10 +262,15 @@ var _ = Describe("SaverBackend", func() {
 				})
 
 				It("will flush contained songs, and reset the ticker", func() {
-					mockFlusher.EXPECT().Flush(expected).Times(1)
+					mockFlusher.EXPECT().Flush(notNil(), expected).Times(1)
 					mockTicker.EXPECT().Reset(period).Times(1)
 				})
 			})
 		})
 	})
 })
+
+// notNil matcher for gomock
+func notNil() gomock.Matcher {
+	return gomock.Not(gomock.Nil())
+}

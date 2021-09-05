@@ -1,13 +1,15 @@
 package flusher
 
 import (
+	. "context"
+
 	"github.com/ozonva/ova-song-api/internal/models"
 	"github.com/ozonva/ova-song-api/internal/repo"
 	"github.com/ozonva/ova-song-api/internal/utils"
 )
 
 type Flusher interface {
-	Flush(songs []models.Song) []models.Song // no error; see slack
+	Flush(ctx Context, songs []models.Song) []models.Song // no error; see slack
 }
 
 func NewFlusher(chunkSize int, songsRepo repo.Repo) Flusher {
@@ -22,7 +24,7 @@ type flusher struct {
 	songsRepo repo.Repo
 }
 
-func (f *flusher) Flush(songs []models.Song) []models.Song {
+func (f *flusher) Flush(ctx Context, songs []models.Song) []models.Song {
 	if f.chunkSize <= 0 {
 		return songs
 	}
@@ -34,7 +36,7 @@ func (f *flusher) Flush(songs []models.Song) []models.Song {
 
 	var failedSongs []models.Song
 	for _, chunk := range chunks {
-		_, err := f.songsRepo.AddSongs(chunk)
+		_, err := f.songsRepo.AddSongs(ctx, chunk)
 		if err != nil {
 			failedSongs = append(failedSongs, chunk...)
 		}

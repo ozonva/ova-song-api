@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+
 	"github.com/opentracing/opentracing-go"
 	olog "github.com/opentracing/opentracing-go/log"
 	br "github.com/ozonva/ova-song-api/internal/broker"
@@ -45,7 +46,7 @@ func (s *api) CreateSongV1(
 	span := tracer.StartSpan(methodName)
 	defer span.Finish()
 
-	newId, err := s.repo.AddSong(CreateSong(0, req.Author, req.Name, int(req.Year)))
+	newId, err := s.repo.AddSong(ctx, CreateSong(0, req.Author, req.Name, int(req.Year)))
 	if err != nil {
 		log.Error().Str("Method name", methodName).Err(err).Msg("Error returned from repo")
 		return nil, err
@@ -109,7 +110,7 @@ func (s *api) CreateSongMultiV1(
 		bSpan.LogFields(olog.Int("Batch number", i))
 		bSpan.LogFields(olog.Int("Songs count", len(batch[i])))
 
-		id, err := s.repo.AddSongs(batch[i])
+		id, err := s.repo.AddSongs(ctx, batch[i])
 		if err != nil {
 			failedCount += len(batch[i])
 			bSpan.LogFields(olog.Error(err))
@@ -160,7 +161,7 @@ func (s *api) DescribeSongV1(
 	span.SetTag(songIdTag, req.SongId)
 	span.SetTag("song_id2", nil)
 
-	song, err := s.repo.DescribeSong(req.SongId)
+	song, err := s.repo.DescribeSong(ctx, req.SongId)
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
@@ -206,7 +207,7 @@ func (s *api) UpdateSongV1(
 
 	span.SetTag(songIdTag, req.Song.Id)
 
-	updated, err := s.repo.UpdateSong(CreateSong(req.Song.Id, req.Song.Author, req.Song.Name, int(req.Song.Year)))
+	updated, err := s.repo.UpdateSong(ctx, CreateSong(req.Song.Id, req.Song.Author, req.Song.Name, int(req.Song.Year)))
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
@@ -252,7 +253,7 @@ func (s *api) ListSongsV1(
 	span.LogFields(olog.Uint64("Offset", req.Offset))
 	span.LogFields(olog.Uint64("Limit", req.Limit))
 
-	songs, err := s.repo.ListSongs(req.Limit, req.Offset)
+	songs, err := s.repo.ListSongs(ctx, req.Limit, req.Offset)
 
 	if err != nil {
 		span.LogFields(olog.Error(err))
@@ -295,7 +296,7 @@ func (s *api) RemoveSongV1(
 		Msg("Method called")
 	span.SetTag(songIdTag, req.SongId)
 
-	removed, err := s.repo.RemoveSong(req.SongId)
+	removed, err := s.repo.RemoveSong(ctx, req.SongId)
 	if err != nil {
 		span.LogFields(olog.Error(err))
 		log.Error().
