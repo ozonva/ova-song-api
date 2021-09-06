@@ -56,10 +56,6 @@ func (r *repo) AddSongs(ctx Context, songs []models.Song) (int64, error) {
 		return 0, err
 	}
 
-	if err = rows.Err(); err != nil {
-		return 0, err
-	}
-
 	var id int64
 	for rows.Next() {
 		err := rows.Scan(&id)
@@ -67,6 +63,11 @@ func (r *repo) AddSongs(ctx Context, songs []models.Song) (int64, error) {
 			return 0, err
 		}
 	}
+
+	if err = rows.Err(); err != nil {
+		return 0, err
+	}
+
 	return id, nil
 }
 
@@ -96,6 +97,11 @@ func (r *repo) ListSongs(ctx Context, limit, offset uint64) ([]models.Song, erro
 		}
 		songs = append(songs, song)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return songs, nil
 }
 
