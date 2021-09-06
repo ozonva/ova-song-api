@@ -13,7 +13,7 @@ func ReverseKey(m map[int]string) (map[string]int, error) {
 
 	for k, v := range m {
 		if _, ok := result[v]; ok {
-			panic("undefined behavior") // see slack discussion
+			return nil, errors.New("non unique value find")
 		}
 		result[v] = k
 	}
