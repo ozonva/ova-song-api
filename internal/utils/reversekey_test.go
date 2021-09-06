@@ -29,12 +29,12 @@ func TestReverseKeySuccess(t *testing.T) {
 func TestReverseKeyNonUniqueValues(t *testing.T) {
 	in := map[int]string{1: "a1", 2: "a1", 3: "a3", 4: "a5"}
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("ReverseKey failed. Expected: panic, actual: no panic")
-		}
-	}()
+	actual, actualErr := ReverseKey(in)
+	if actualErr == nil {
+		t.Fatalf("ReverseKey failed. Expected: error != nil, actual: nil")
+	}
 
-	ignored, _ := ReverseKey(in)
-	_ = ignored
+	if actual != nil {
+		t.Fatalf("ReverseKey failed. Expected: result == nil, actual: %v", actual)
+	}
 }
