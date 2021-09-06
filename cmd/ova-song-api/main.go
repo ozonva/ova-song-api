@@ -10,6 +10,7 @@ import (
 	br "github.com/ozonva/ova-song-api/internal/broker"
 	rp "github.com/ozonva/ova-song-api/internal/repo"
 	"github.com/ozonva/ova-song-api/internal/startup"
+	descHealth "github.com/ozonva/ova-song-api/pkg/health-probe"
 	desc "github.com/ozonva/ova-song-api/pkg/ova-song-api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
@@ -36,7 +37,7 @@ func main() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		if err := http.ListenAndServe(":8056", nil); err != nil {
-			log.Fatal().Err(err).Msgf("Failed to start listen to metric requests, error %s", err)
+			log.Error().Err(err).Msg("Failed to start listen to metric requests")
 		}
 	}()
 
@@ -59,10 +60,11 @@ func main() {
 
 	s := grpc.NewServer()
 	desc.RegisterOvaSongApiServer(s, createSongApi(broker))
+	descHealth.RegisterHealthServer(s, api.NewHealthApi())
 	if err := s.Serve(lis); err != nil {
 		log.Fatal().Msgf("failed to serve: %v", err)
 	}
-	log.Fatal().Msgf("11failed to serve: %v", err)
+	log.Fatal().Msgf("failed to serve: %v", err)
 }
 
 func createSongApi(broker br.Broker) desc.OvaSongApiServer {

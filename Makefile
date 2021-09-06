@@ -29,6 +29,10 @@ generate:
 			--go-grpc_out=./pkg/ova-song-api --go-grpc_opt=paths=source_relative   \
 			ova-song-api.proto
 
+	protoc --proto_path=api --go_out=./pkg/health-probe --go_opt=paths=source_relative   \
+			--go-grpc_out=./pkg/health-probe --go-grpc_opt=paths=source_relative   \
+			health-probe.proto
+
 PHONY: .build
 .build:
 ifeq ($(OS), Windows_NT)
@@ -67,3 +71,7 @@ migrations: .migrations-deps .do-migrations
 .PHONY: run-grpcui
 run-grpcui:
 	grpcui -plaintext -proto "./api/ova-song-api.proto" localhost:50051
+
+.PHONY: run-grpcui-health
+run-grpcui-health:
+	grpcui -plaintext -proto "./api/health-probe.proto" localhost:50051

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package ova.song.api;
+
+option go_package = "github.com/ozonva/ova-song-api/pkg/health-probe;health_probe";
+
+service Health {
+
+  rpc CheckHealthV1 (CheckHealthV1Request) returns (CheckHealthV1Response) {}
+
+}
+
+message CheckHealthV1Request {
+  string text = 1;
+}
+
+message CheckHealthV1Response {
+  string echo_text = 1;
+}
