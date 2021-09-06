@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ova.task.api;
+package ova.song.api;
 
 option go_package = "github.com/ozonva/ova-song-api/pkg/ova-song-api;ova_song_api";
 
