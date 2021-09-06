@@ -1,0 +1,26 @@
+Grpc:
+  Port: ":50051"
+
+Database:
+  Username: "ova_song_db_user"
+
+  #  - Шеф, у нас дыра в безопасности!
+  # - Ну хоть что-то у нас в безопасности.
+  Password: "ova_song_db_user"
+  Host: "localhost"
+  Port: "5432"
+  DbName: "ova_song_db"
+
+Jaeger:
+  ServiceName: "ova-song-api"
+  Host: "127.0.0.1"
+  Port: ":6831"
+
+Metrics:
+  HandleName: "/metrics"
+  ListenPort: ":8056"
+
+Kafka:
+  TopicName: "songs"
+  Brokers:
+    - "localhost:9092"
