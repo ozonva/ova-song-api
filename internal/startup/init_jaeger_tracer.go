@@ -9,7 +9,7 @@ import (
 	"github.com/uber/jaeger-lib/metrics"
 )
 
-func InitJaegerTracer(serviceName, jaegerHost, jaegerPort string) (io.Closer, error) {
+func InitJaegerTracer(serviceName, host, port string) (io.Closer, error) {
 	cfg := config.Configuration{
 		Sampler: &config.SamplerConfig{
 			Type:  jaeger.SamplerTypeConst,
@@ -17,7 +17,7 @@ func InitJaegerTracer(serviceName, jaegerHost, jaegerPort string) (io.Closer, er
 		},
 		Reporter: &config.ReporterConfig{
 			LogSpans:           true,
-			LocalAgentHostPort: jaegerHost + jaegerPort,
+			LocalAgentHostPort: host + port,
 		}}
 
 	jLogger := zerolog_adapter.JaegerAdapter

@@ -36,7 +36,7 @@ func NewOvaSongApiClient(cc grpc.ClientConnInterface) OvaSongApiClient {
 
 func (c *ovaSongApiClient) CreateSongV1(ctx context.Context, in *CreateSongV1Request, opts ...grpc.CallOption) (*CreateSongV1Response, error) {
 	out := new(CreateSongV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/CreateSongV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/CreateSongV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (c *ovaSongApiClient) CreateSongV1(ctx context.Context, in *CreateSongV1Req
 
 func (c *ovaSongApiClient) CreateSongMultiV1(ctx context.Context, in *CreateSongMultiV1Request, opts ...grpc.CallOption) (*CreateSongMultiV1Response, error) {
 	out := new(CreateSongMultiV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/CreateSongMultiV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/CreateSongMultiV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *ovaSongApiClient) CreateSongMultiV1(ctx context.Context, in *CreateSong
 
 func (c *ovaSongApiClient) DescribeSongV1(ctx context.Context, in *DescribeSongV1Request, opts ...grpc.CallOption) (*DescribeSongV1Response, error) {
 	out := new(DescribeSongV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/DescribeSongV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/DescribeSongV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (c *ovaSongApiClient) DescribeSongV1(ctx context.Context, in *DescribeSongV
 
 func (c *ovaSongApiClient) UpdateSongV1(ctx context.Context, in *UpdateSongV1Request, opts ...grpc.CallOption) (*UpdateSongV1Response, error) {
 	out := new(UpdateSongV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/UpdateSongV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/UpdateSongV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *ovaSongApiClient) UpdateSongV1(ctx context.Context, in *UpdateSongV1Req
 
 func (c *ovaSongApiClient) ListSongsV1(ctx context.Context, in *ListSongsV1Request, opts ...grpc.CallOption) (*ListSongsV1Response, error) {
 	out := new(ListSongsV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/ListSongsV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/ListSongsV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (c *ovaSongApiClient) ListSongsV1(ctx context.Context, in *ListSongsV1Reque
 
 func (c *ovaSongApiClient) RemoveSongV1(ctx context.Context, in *RemoveSongV1Request, opts ...grpc.CallOption) (*RemoveSongV1Response, error) {
 	out := new(RemoveSongV1Response)
-	err := c.cc.Invoke(ctx, "/ova.task.api.OvaSongApi/RemoveSongV1", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/ova.song.api.OvaSongApi/RemoveSongV1", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func _OvaSongApi_CreateSongV1_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/CreateSongV1",
+		FullMethod: "/ova.song.api.OvaSongApi/CreateSongV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).CreateSongV1(ctx, req.(*CreateSongV1Request))
@@ -164,7 +164,7 @@ func _OvaSongApi_CreateSongMultiV1_Handler(srv interface{}, ctx context.Context,
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/CreateSongMultiV1",
+		FullMethod: "/ova.song.api.OvaSongApi/CreateSongMultiV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).CreateSongMultiV1(ctx, req.(*CreateSongMultiV1Request))
@@ -182,7 +182,7 @@ func _OvaSongApi_DescribeSongV1_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/DescribeSongV1",
+		FullMethod: "/ova.song.api.OvaSongApi/DescribeSongV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).DescribeSongV1(ctx, req.(*DescribeSongV1Request))
@@ -200,7 +200,7 @@ func _OvaSongApi_UpdateSongV1_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/UpdateSongV1",
+		FullMethod: "/ova.song.api.OvaSongApi/UpdateSongV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).UpdateSongV1(ctx, req.(*UpdateSongV1Request))
@@ -218,7 +218,7 @@ func _OvaSongApi_ListSongsV1_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/ListSongsV1",
+		FullMethod: "/ova.song.api.OvaSongApi/ListSongsV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).ListSongsV1(ctx, req.(*ListSongsV1Request))
@@ -236,7 +236,7 @@ func _OvaSongApi_RemoveSongV1_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/ova.task.api.OvaSongApi/RemoveSongV1",
+		FullMethod: "/ova.song.api.OvaSongApi/RemoveSongV1",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OvaSongApiServer).RemoveSongV1(ctx, req.(*RemoveSongV1Request))
@@ -248,7 +248,7 @@ func _OvaSongApi_RemoveSongV1_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var OvaSongApi_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "ova.task.api.OvaSongApi",
+	ServiceName: "ova.song.api.OvaSongApi",
 	HandlerType: (*OvaSongApiServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
