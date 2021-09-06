@@ -11,6 +11,7 @@ type Repo interface {
 	AddSongs(songs []models.Song) (int64, error)
 	ListSongs(limit, offset uint64) ([]models.Song, error)
 	DescribeSong(songId uint64) (*models.Song, error)
+	UpdateSong(song models.Song) (bool, error)
 	RemoveSong(songId uint64) (bool, error)
 }
 
@@ -40,6 +41,7 @@ func (r *repo) AddSong(songs models.Song) (int64, error) {
 func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 	query := squirrel.Insert(r.tableName).
 		Columns("name", "author", "year").
+		Suffix("RETURNING \"id\"").
 		RunWith(r.db).
 		PlaceholderFormat(squirrel.Dollar)
 
@@ -47,16 +49,24 @@ func (r *repo) AddSongs(songs []models.Song) (int64, error) {
 		query = query.Values(songs[i].Name, songs[i].Author, songs[i].Year)
 	}
 
-	result, err := query.Exec()
+	rows, err := query.Query()
 	if err != nil {
 		return 0, err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
+	var id int64
+	for rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if err = rows.Err(); err != nil {
 		return 0, err
 	}
-	return rowsAffected, nil
+
+	return id, nil
 }
 
 func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
@@ -85,6 +95,11 @@ func (r *repo) ListSongs(limit, offset uint64) ([]models.Song, error) {
 		}
 		songs = append(songs, song)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return songs, nil
 }
 
@@ -102,6 +117,27 @@ func (r *repo) DescribeSong(songId uint64) (*models.Song, error) {
 		return nil, err
 	}
 	return &song, nil
+}
+
+func (r *repo) UpdateSong(song models.Song) (bool, error) {
+	query := squirrel.Update(r.tableName).
+		Set("name", song.Name).
+		Set("author", song.Author).
+		Set("year", song.Year).
+		Where(squirrel.Eq{"id": song.Id}).
+		RunWith(r.db).
+		PlaceholderFormat(squirrel.Dollar)
+
+	result, err := query.Exec()
+	if err != nil {
+		return false, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected > 0, nil
 }
 
 func (r *repo) RemoveSong(songId uint64) (bool, error) {

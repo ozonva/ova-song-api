@@ -62,21 +62,25 @@ var _ = Describe("Repo", func() {
 		})
 	})
 
-	Describe("Add Songs", func() {
+	Describe("Add songs", func() {
 		BeforeEach(func() {
-			query := mock.ExpectExec("INSERT INTO songs").
+			query := mock.ExpectQuery("INSERT INTO songs").
 				WithArgs(
 					songs[0].Name, songs[0].Author, songs[0].Year,
 					songs[1].Name, songs[1].Author, songs[1].Year,
 					songs[2].Name, songs[2].Author, songs[2].Year,
 					songs[3].Name, songs[3].Author, songs[3].Year,
 				)
-			query.WillReturnResult(sqlmock.NewResult(4, 4))
+			query.WillReturnRows(sqlmock.
+				NewRows([]string{"id"}).
+				AddRow(1).AddRow(2).AddRow(3).AddRow(4),
+			)
 		})
 
-		It("Should succeed", func() {
-			_, err := repo.AddSongs(songs)
+		It("Should succeed and return last inserted id", func() {
+			id, err := repo.AddSongs(songs)
 			Expect(err).To(BeNil())
+			Expect(id).To(Equal(int64(4)))
 		})
 	})
 
@@ -93,6 +97,40 @@ var _ = Describe("Repo", func() {
 			song, err := repo.DescribeSong(someSong.Id)
 			Expect(err).To(BeNil())
 			Expect(song).To(BeEquivalentTo(&someSong))
+		})
+	})
+
+	Describe("Update song", func() {
+		var rowsAffected int64
+
+		JustBeforeEach(func() {
+			mock.ExpectExec("UPDATE songs SET").
+				WithArgs(someSong.Name, someSong.Author, someSong.Year, someSong.Id).
+				WillReturnResult(sqlmock.NewResult(0, rowsAffected))
+		})
+
+		Context("the song to be updated is present", func() {
+			BeforeEach(func() {
+				rowsAffected = 1
+			})
+
+			It("Should succeed and return true", func() {
+				succeed, err := repo.UpdateSong(someSong)
+				Expect(err).To(BeNil())
+				Expect(succeed).To(BeTrue())
+			})
+		})
+
+		Context("the song to be updated is absent", func() {
+			BeforeEach(func() {
+				rowsAffected = 0
+			})
+
+			It("Should succeed and return false", func() {
+				succeed, err := repo.UpdateSong(someSong)
+				Expect(err).To(BeNil())
+				Expect(succeed).To(BeFalse())
+			})
 		})
 	})
 
@@ -146,6 +184,5 @@ var _ = Describe("Repo", func() {
 				Expect(deleted).To(BeFalse())
 			})
 		})
-
 	})
 })
