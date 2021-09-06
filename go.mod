@@ -20,6 +20,7 @@ require (
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rs/zerolog v1.24.0
 	github.com/shopspring/decimal v1.2.0 // indirect
