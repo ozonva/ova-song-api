@@ -19,6 +19,12 @@ lint:
 tests: mocks
 	go test -v ./...
 
+.PHONY: test-coverage
+test-coverage: mocks
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out
+
 PHONY: mocks
 mocks:
 	go generate ./...
@@ -75,3 +81,4 @@ run-grpcui:
 .PHONY: run-grpcui-health
 run-grpcui-health:
 	grpcui -plaintext -proto "./api/health-probe.proto" localhost:50051
+
