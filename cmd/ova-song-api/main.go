@@ -1,8 +1,10 @@
 package main
 
 import (
+	"io"
 	"net"
 	"net/http"
+	"os"
 
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -14,13 +16,16 @@ import (
 	descHealth "github.com/ozonva/ova-song-api/pkg/health-probe"
 	desc "github.com/ozonva/ova-song-api/pkg/ova-song-api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func main() {
 	conf := ReadConfig()
+	InitLogger(conf.Log)
 
 	tracerCloser, err := startup.InitJaegerTracer(conf.Jaeger.ServiceName, conf.Jaeger.Host, conf.Jaeger.Port)
 	if err != nil {
@@ -65,6 +70,18 @@ func main() {
 		log.Fatal().Err(err).Msg("api failed to serve")
 	}
 	log.Fatal().Msgf("api failed to serve")
+}
+
+func InitLogger(conf configuration.Log) {
+	var lumberjackWriter io.Writer = &lumberjack.Logger{
+		Filename:   conf.Filename,
+		MaxSize:    conf.MaxSizeMb,
+		MaxBackups: conf.MaxBackups,
+		MaxAge:     conf.MaxAgeDays,
+	}
+
+	writer := io.MultiWriter(os.Stderr, lumberjackWriter)
+	log.Logger = zerolog.New(writer).With().Timestamp().Logger()
 }
 
 func ReadConfig() configuration.App {
