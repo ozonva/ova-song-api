@@ -1,6 +1,7 @@
 package saver
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ var _ = Describe("Saver", func() {
 		svr       Saver
 		songChan  chan Song
 		closeChan chan struct{}
+		ctx       context.Context
 
 		someSong = Song{Id: 1, Author: "1", Name: "1", Year: 1}
 	)
@@ -29,13 +31,14 @@ var _ = Describe("Saver", func() {
 	BeforeEach(func() {
 		songChan = make(chan Song, capacity)
 		closeChan = make(chan struct{})
+		ctx = context.Background()
 
 		svr = &saver{songChan, closeChan}
 	})
 
 	When("Save() called", func() {
 		BeforeEach(func() {
-			svr.Save(someSong)
+			svr.Save(ctx, someSong)
 		})
 
 		It("will push song into the songs channel", func() {
@@ -43,12 +46,42 @@ var _ = Describe("Saver", func() {
 		})
 	})
 
-	When("Close() called", func() {
+	When("Context cancelled while Save() called", func() {
+		var (
+			cancelContext context.Context
+			cancelFun     context.CancelFunc
+			unblocked     chan struct{}
+		)
 
 		BeforeEach(func() {
-			defer GinkgoRecover()
+			cancelContext, cancelFun = context.WithCancel(ctx)
+			unblocked = make(chan struct{})
+
+			// should block so called in separate goroutine
+			go func() {
+				defer GinkgoRecover()
+				for i := 0; i < capacity+1; i++ {
+					svr.Save(cancelContext, someSong)
+				}
+
+				close(unblocked)
+			}()
+		})
+
+		It("will cancel saving the last song", func() {
+			Eventually(songChan).Should(HaveLen(capacity))
+			cancelFun()
+			Eventually(unblocked).Should(BeClosed())
+		})
+	})
+
+	When("Close() called", func() {
+		BeforeEach(func() {
 			// called in a separate goroutine to avoid blocking due to using an unbuffered channel
-			go svr.Close()
+			go func() {
+				defer GinkgoRecover()
+				svr.Close()
+			}()
 		})
 
 		It("will close songs and `close` channel", func() {
@@ -75,16 +108,16 @@ var _ = Describe("SaverBackend", func() {
 		period   = time.Hour // whatever
 		someSong = Song{Id: 100, Author: "100", Name: "100", Year: 100}
 		songs    = []Song{
-			{1, "Author 1", "Name 1", 2001},
-			{2, "Author 2", "Name 2", 2002},
-			{3, "Author 3", "Name 3", 2003},
-			{4, "Author 4", "Name 4", 2004},
-			{5, "Author 5", "Name 5", 2005},
-			{6, "Author 6", "Name 6", 2006},
-			{7, "Author 7", "Name 7", 2007},
-			{8, "Author 8", "Name 8", 2008},
-			{9, "Author 9", "Name 9", 2009},
-			{10, "Author 10", "Name 10", 2010},
+			{Id: 1, Author: "Author 1", Name: "Name 1", Year: 2001},
+			{Id: 2, Author: "Author 2", Name: "Name 2", Year: 2002},
+			{Id: 3, Author: "Author 3", Name: "Name 3", Year: 2003},
+			{Id: 4, Author: "Author 4", Name: "Name 4", Year: 2004},
+			{Id: 5, Author: "Author 5", Name: "Name 5", Year: 2005},
+			{Id: 6, Author: "Author 6", Name: "Name 6", Year: 2006},
+			{Id: 7, Author: "Author 7", Name: "Name 7", Year: 2007},
+			{Id: 8, Author: "Author 8", Name: "Name 8", Year: 2008},
+			{Id: 9, Author: "Author 9", Name: "Name 9", Year: 2009},
+			{Id: 10, Author: "Author 10", Name: "Name 10", Year: 2010},
 		}
 
 		// we have to wait for the backend to complete in order to be sure that the gomock can record all calls
@@ -149,7 +182,7 @@ var _ = Describe("SaverBackend", func() {
 
 	When("one song received", func() {
 		BeforeEach(func() {
-			mockFlusher.EXPECT().Flush([]Song{someSong}).Times(1)
+			mockFlusher.EXPECT().Flush(notNil(), []Song{someSong}).Times(1)
 		})
 
 		AfterEach(func() {
@@ -174,7 +207,7 @@ var _ = Describe("SaverBackend", func() {
 
 		When("the close signals arrived", func() {
 			It("will flush all songs and stop the timer", func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Times(1)
 			})
 		})
 
@@ -184,14 +217,14 @@ var _ = Describe("SaverBackend", func() {
 			})
 
 			It("will flush contained songs and reset the ticker", func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Times(1)
 				mockTicker.EXPECT().Reset(period).Times(1)
 			})
 		})
 
 		Context("flusher will fail to save the second and the fourth songs", func() {
 			BeforeEach(func() {
-				mockFlusher.EXPECT().Flush(songs[:n]).Return([]Song{songs[1], songs[3]}).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), songs[:n]).Return([]Song{songs[1], songs[3]}).Times(1)
 			})
 
 			When("the ticker does tick", func() {
@@ -200,7 +233,7 @@ var _ = Describe("SaverBackend", func() {
 				})
 
 				It("will flush contained songs, reset the ticker and flush remaining songs later", func() {
-					mockFlusher.EXPECT().Flush([]Song{songs[1], songs[3]}).Times(1)
+					mockFlusher.EXPECT().Flush(notNil(), []Song{songs[1], songs[3]}).Times(1)
 					mockTicker.EXPECT().Reset(period).Times(1)
 				})
 			})
@@ -220,7 +253,7 @@ var _ = Describe("SaverBackend", func() {
 			})
 
 			It("should save the all the songs(when closed)", func() {
-				mockFlusher.EXPECT().Flush(expected).Times(1)
+				mockFlusher.EXPECT().Flush(notNil(), expected).Times(1)
 			})
 
 			When("the ticker does tick", func() {
@@ -229,10 +262,15 @@ var _ = Describe("SaverBackend", func() {
 				})
 
 				It("will flush contained songs, and reset the ticker", func() {
-					mockFlusher.EXPECT().Flush(expected).Times(1)
+					mockFlusher.EXPECT().Flush(notNil(), expected).Times(1)
 					mockTicker.EXPECT().Reset(period).Times(1)
 				})
 			})
 		})
 	})
 })
+
+// notNil matcher for gomock
+func notNil() gomock.Matcher {
+	return gomock.Not(gomock.Nil())
+}

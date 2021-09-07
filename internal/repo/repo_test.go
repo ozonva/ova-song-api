@@ -1,6 +1,7 @@
 package repo_test
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -17,14 +18,15 @@ var _ = Describe("Repo", func() {
 		db     *sql.DB
 		sqlxDB *sqlx.DB
 		mock   sqlmock.Sqlmock
+		ctx    context.Context
 
 		repo rp.Repo
 
 		songs = []models.Song{
-			{1, "Author 1", "Name 1", 2001},
-			{2, "Author 2", "Name 2", 2002},
-			{3, "Author 3", "Name 3", 2003},
-			{4, "Author 4", "Name 4", 2004},
+			{Id: 1, Author: "Author 1", Name: "Name 1", Year: 2001},
+			{Id: 2, Author: "Author 2", Name: "Name 2", Year: 2002},
+			{Id: 3, Author: "Author 3", Name: "Name 3", Year: 2003},
+			{Id: 4, Author: "Author 4", Name: "Name 4", Year: 2004},
 		}
 		someSong = songs[0]
 	)
@@ -34,6 +36,7 @@ var _ = Describe("Repo", func() {
 		db, mock, err = sqlmock.New()
 		Expect(err).To(BeNil())
 		sqlxDB = sqlx.NewDb(db, "sqlmock")
+		ctx = context.Background()
 
 		repo = rp.NewRepo(sqlxDB)
 	})
@@ -56,7 +59,7 @@ var _ = Describe("Repo", func() {
 
 		It("Should succeed and return correct id", func() {
 			song := songs[0]
-			newId, err := repo.AddSong(song)
+			newId, err := repo.AddSong(ctx, song)
 			Expect(err).To(BeNil())
 			Expect(newId).To(Equal(expectedRowId))
 		})
@@ -78,7 +81,7 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("Should succeed and return last inserted id", func() {
-			id, err := repo.AddSongs(songs)
+			id, err := repo.AddSongs(ctx, songs)
 			Expect(err).To(BeNil())
 			Expect(id).To(Equal(int64(4)))
 		})
@@ -94,7 +97,7 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("Should succeed and return correct song", func() {
-			song, err := repo.DescribeSong(someSong.Id)
+			song, err := repo.DescribeSong(ctx, someSong.Id)
 			Expect(err).To(BeNil())
 			Expect(song).To(BeEquivalentTo(&someSong))
 		})
@@ -115,7 +118,7 @@ var _ = Describe("Repo", func() {
 			})
 
 			It("Should succeed and return true", func() {
-				succeed, err := repo.UpdateSong(someSong)
+				succeed, err := repo.UpdateSong(ctx, someSong)
 				Expect(err).To(BeNil())
 				Expect(succeed).To(BeTrue())
 			})
@@ -127,7 +130,7 @@ var _ = Describe("Repo", func() {
 			})
 
 			It("Should succeed and return false", func() {
-				succeed, err := repo.UpdateSong(someSong)
+				succeed, err := repo.UpdateSong(ctx, someSong)
 				Expect(err).To(BeNil())
 				Expect(succeed).To(BeFalse())
 			})
@@ -150,7 +153,7 @@ var _ = Describe("Repo", func() {
 		})
 
 		It("Should succeed and return correct songs", func() {
-			actualSongs, err := repo.ListSongs(limit, offset)
+			actualSongs, err := repo.ListSongs(ctx, limit, offset)
 			Expect(err).To(BeNil())
 			Expect(actualSongs).To(BeEquivalentTo(songs[offset : offset+limit]))
 		})
@@ -165,7 +168,7 @@ var _ = Describe("Repo", func() {
 			})
 
 			It("Should succeed and return true", func() {
-				deleted, err := repo.RemoveSong(someSong.Id)
+				deleted, err := repo.RemoveSong(ctx, someSong.Id)
 				Expect(err).To(BeNil())
 				Expect(deleted).To(BeTrue())
 			})
@@ -179,7 +182,7 @@ var _ = Describe("Repo", func() {
 			})
 
 			It("Should succeed and return false", func() {
-				deleted, err := repo.RemoveSong(someSong.Id)
+				deleted, err := repo.RemoveSong(ctx, someSong.Id)
 				Expect(err).To(BeNil())
 				Expect(deleted).To(BeFalse())
 			})
