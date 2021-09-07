@@ -1,3 +1,9 @@
+Log:
+  Filename: "./.logs/logs.log"
+  MaxSizeMb: 1
+  MaxBackups: 3
+  MaxAgeDays: 28
+
 Grpc:
   Port: ":50051"
 

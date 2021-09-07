@@ -16,3 +16,6 @@
 
 # IDE
 .idea/
+
+# Default logs dit
+.logs/

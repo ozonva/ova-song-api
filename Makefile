@@ -19,6 +19,12 @@ lint:
 tests: mocks
 	go test -v ./...
 
+.PHONY: test-coverage
+test-coverage: mocks
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+	go tool cover -html=coverage.out
+
 PHONY: mocks
 mocks:
 	go generate ./...
@@ -48,6 +54,7 @@ dependencies:
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	go get -u google.golang.org/grpc
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go get -u golang.org/x/tools/cmd/godoc
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 	go mod download
@@ -68,6 +75,11 @@ migrations: .migrations-deps .do-migrations
 		goose -dir ./migrations postgres \
 					"user=ova_song_db_user password=ova_song_db_user dbname=ova_song_db sslmode=disable" up
 
+.PHONY: run-godoc
+run-godoc:
+	echo documentation available at http://127.0.0.1:6060/
+	godoc -http=:6060
+
 .PHONY: run-grpcui
 run-grpcui:
 	grpcui -plaintext -proto "./api/ova-song-api.proto" localhost:50051
@@ -75,3 +87,4 @@ run-grpcui:
 .PHONY: run-grpcui-health
 run-grpcui-health:
 	grpcui -plaintext -proto "./api/health-probe.proto" localhost:50051
+
